@@ -5,6 +5,43 @@ import type { VideoSettings } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+function asNonEmptyString(value: unknown) {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return '';
+}
+
+function getTaskId(payload: any) {
+  const candidates = [
+    typeof payload === 'string' ? payload : '',
+    payload?.data?.task_id,
+    payload?.task_id,
+    payload?.data?.taskId,
+    payload?.taskId,
+    payload?.task?.task_id,
+    payload?.task?.taskId,
+    payload?.data?.task?.task_id,
+    payload?.data?.task?.taskId,
+    payload?.data?.[0]?.task_id,
+    payload?.data?.[0]?.taskId,
+    payload?.[0]?.task_id,
+    payload?.[0]?.taskId,
+    payload?.data?.id,
+    payload?.id,
+    typeof payload?.data === 'string' ? payload.data : '',
+  ];
+
+  for (const candidate of candidates) {
+    const value = asNonEmptyString(candidate);
+    if (value) return value;
+  }
+  return '';
+}
+
+function getInitialStatus(payload: any) {
+  return asNonEmptyString(payload?.data?.status) || asNonEmptyString(payload?.status) || 'queued';
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
@@ -46,17 +83,44 @@ export async function POST(request: Request) {
       return Response.json({ error: `ShopAIKey video error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
     }
 
-    const data = JSON.parse(raw);
-    const taskId = data?.data?.task_id;
+    let data: any;
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      console.error('ShopAIKey returned non-JSON video response', raw);
+      return Response.json({ error: `ShopAIKey trả về dữ liệu không hợp lệ: ${raw.slice(0, 300)}` }, { status: 502 });
+    }
+
+    const embeddedError =
+      asNonEmptyString(data?.error?.message) ||
+      asNonEmptyString(data?.error) ||
+      (data?.code && String(data.code).toLowerCase() !== 'success' ? asNonEmptyString(data?.message) : '');
+    if (embeddedError) {
+      console.error('ShopAIKey video embedded error', data);
+      return Response.json({ error: `ShopAIKey: ${embeddedError}` }, { status: 502 });
+    }
+
+    const taskId = getTaskId(data);
     if (!taskId) {
-      return Response.json({ error: 'ShopAIKey did not return task_id', raw: data }, { status: 502 });
+      console.error('ShopAIKey missing task id', data);
+      const rootKeys = data && typeof data === 'object' ? Object.keys(data).slice(0, 20) : [];
+      const dataKeys = data?.data && typeof data.data === 'object' && !Array.isArray(data.data)
+        ? Object.keys(data.data).slice(0, 20)
+        : [];
+      return Response.json(
+        {
+          error: `ShopAIKey đã nhận request nhưng không trả về mã task. code=${asNonEmptyString(data?.code) || 'n/a'}, message=${asNonEmptyString(data?.message) || 'n/a'}.`,
+          responseShape: { rootKeys, dataKeys },
+        },
+        { status: 502 },
+      );
     }
 
     await attachVideoTask({ historyId, prompt, taskId, settings });
 
     return Response.json({
       taskId,
-      status: data?.data?.status || 'queued',
+      status: getInitialStatus(data),
       historyId,
     });
   } catch (error) {

@@ -290,3 +290,52 @@ summary { cursor: pointer; color: #c8bfff; font-weight: 700; }
   .workflow-tab { padding: 11px 12px; }
   .workflow-tab-number { min-width: 34px; height: 34px; }
 }
+
+/* Four-step workflow refinements */
+.workflow-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.workflow-tab:disabled { opacity: .48; cursor: not-allowed; }
+.workflow-tab:disabled:hover { background: transparent; color: var(--muted); }
+.confirmed-choice-summary,
+.step4-confirmed-prompt {
+  border: 1px solid #303a4b;
+  background: linear-gradient(135deg, rgba(124,92,255,.10), rgba(36,200,165,.04));
+  border-radius: 14px;
+  padding: 15px 16px;
+  margin-bottom: 16px;
+}
+.confirmed-choice-summary > span,
+.step4-confirmed-prompt > span {
+  display: block;
+  color: #a99bff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 7px;
+}
+.confirmed-choice-summary strong { display: block; margin-bottom: 7px; }
+.confirmed-choice-summary p,
+.step4-confirmed-prompt p {
+  margin: 0;
+  color: #d9dee7;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.step4-confirmed-prompt p { max-height: 160px; overflow: auto; }
+.confirmation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 980px) {
+  .workflow-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .workflow-tabs { grid-template-columns: 1fr; }
+  .confirmation-actions { align-items: stretch; flex-direction: column-reverse; }
+  .confirmation-actions .primary-button,
+  .confirmation-actions .secondary-button { width: 100%; }
+}

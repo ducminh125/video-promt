@@ -4,6 +4,12 @@ import { shopAIKeyFetch } from '@/lib/shopaikey';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+function text(value: unknown) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return '';
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ taskId: string }> },
@@ -19,29 +25,23 @@ export async function GET(
       return Response.json({ error: `ShopAIKey status error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
     }
 
-    const data = JSON.parse(raw);
-    const task = data?.data || {};
-    const status = String(task.status || 'unknown');
-    const progress = task.progress ? String(task.progress) : null;
-    const videoUrl = task.result_url ? String(task.result_url) : null;
-    const failReason = task.fail_reason ? String(task.fail_reason) : null;
+    let data: any;
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      return Response.json({ error: 'ShopAIKey status response is not valid JSON' }, { status: 502 });
+    }
 
-    await updateTaskStatus({
-      taskId,
-      status,
-      progress,
-      videoUrl,
-      failReason,
-    });
+    const taskSource = data?.data ?? data ?? {};
+    const task = Array.isArray(taskSource) ? (taskSource[0] || {}) : taskSource;
+    const status = text(task.status) || 'unknown';
+    const progress = text(task.progress) || null;
+    const videoUrl = text(task.result_url) || text(task.video_url) || text(task.url) || null;
+    const failReason = text(task.fail_reason) || text(task.error?.message) || text(task.error) || null;
 
-    return Response.json({
-      taskId,
-      status,
-      progress,
-      videoUrl,
-      failReason,
-      raw: task,
-    });
+    await updateTaskStatus({ taskId, status, progress, videoUrl, failReason });
+
+    return Response.json({ taskId, status, progress, videoUrl, failReason });
   } catch (error) {
     console.error('status error', error);
     return Response.json(

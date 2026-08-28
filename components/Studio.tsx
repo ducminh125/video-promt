@@ -14,7 +14,7 @@ type VideoState = {
 
 const MAX_FILES = 4;
 
-type WorkflowTab = 'step-1' | 'step-23' | 'step-4';
+type WorkflowTab = 'step-1' | 'step-2' | 'step-3' | 'step-4';
 
 export default function Studio() {
   const [description, setDescription] = useState('');
@@ -33,6 +33,7 @@ export default function Studio() {
   const [ratio, setRatio] = useState('16:9');
   const [resolution, setResolution] = useState<'720P' | '1080P'>('1080P');
   const [activeTab, setActiveTab] = useState<WorkflowTab>('step-1');
+  const [promptConfirmed, setPromptConfirmed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function invalidateDownstream() {
@@ -42,6 +43,7 @@ export default function Studio() {
     setEditedPrompt('');
     setHistoryId('');
     setVideoState(null);
+    setPromptConfirmed(false);
   }
 
   const referenceImages = useMemo(
@@ -147,6 +149,7 @@ export default function Studio() {
     setSelectedIndex(null);
     setEditedPrompt('');
     setVideoState(null);
+    setPromptConfirmed(false);
     try {
       const response = await fetch('/api/prompts', {
         method: 'POST',
@@ -161,7 +164,7 @@ export default function Studio() {
       if (!response.ok) throw new Error(data.error || 'Không tạo được prompt');
       setSuggestions(data.suggestions);
       setHistoryId(data.historyId);
-      setActiveTab('step-23');
+      setActiveTab('step-2');
     } catch (promptError) {
       setError(promptError instanceof Error ? promptError.message : 'Không tạo được prompt');
     } finally {
@@ -172,11 +175,26 @@ export default function Studio() {
   function choosePrompt(index: number) {
     setSelectedIndex(index);
     setEditedPrompt(suggestions[index].prompt);
-    setActiveTab('step-23');
+    setPromptConfirmed(false);
+    setError('');
+    setActiveTab('step-3');
+  }
+
+  function confirmPrompt() {
+    if (selectedIndex === null || !editedPrompt.trim()) {
+      setError('Hãy chọn và kiểm tra prompt trước khi xác nhận.');
+      return;
+    }
+    setError('');
+    setPromptConfirmed(true);
+    setActiveTab('step-4');
   }
 
   async function generateVideo() {
-    if (!editedPrompt.trim() || !historyId) return;
+    if (!editedPrompt.trim() || !historyId || !promptConfirmed) {
+      setError('Hãy xác nhận prompt ở Bước 3 trước khi tạo video.');
+      return;
+    }
     setError('');
     setVideoLoading(true);
     setVideoState(null);
@@ -236,19 +254,33 @@ export default function Studio() {
         </button>
         <button
           type="button"
-          className={`workflow-tab ${activeTab === 'step-23' ? 'active' : ''}`}
-          onClick={() => setActiveTab('step-23')}
+          className={`workflow-tab ${activeTab === 'step-2' ? 'active' : ''}`}
+          onClick={() => setActiveTab('step-2')}
+          disabled={!suggestions.length}
         >
-          <span className="workflow-tab-number">2–3</span>
+          <span className="workflow-tab-number">2</span>
           <span className="workflow-tab-copy">
-            <strong>Bước 2–3</strong>
-            <small>{suggestions.length ? 'Chọn & chỉnh prompt' : 'Chờ prompt từ bước 1'}</small>
+            <strong>Bước 2</strong>
+            <small>{suggestions.length ? 'Chọn 1 trong 3 prompt' : 'Chờ prompt từ bước 1'}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`workflow-tab ${activeTab === 'step-3' ? 'active' : ''}`}
+          onClick={() => setActiveTab('step-3')}
+          disabled={selectedIndex === null}
+        >
+          <span className="workflow-tab-number">3</span>
+          <span className="workflow-tab-copy">
+            <strong>Bước 3</strong>
+            <small>{selectedIndex !== null ? (promptConfirmed ? 'Prompt đã xác nhận' : 'Kiểm tra & xác nhận') : 'Chưa chọn prompt'}</small>
           </span>
         </button>
         <button
           type="button"
           className={`workflow-tab ${activeTab === 'step-4' ? 'active' : ''}`}
           onClick={() => setActiveTab('step-4')}
+          disabled={!promptConfirmed && !videoState}
         >
           <span className="workflow-tab-number">4</span>
           <span className="workflow-tab-copy">
@@ -260,7 +292,9 @@ export default function Studio() {
                   : videoState.status.toUpperCase() === 'FAILURE'
                     ? 'Tạo video thất bại'
                     : 'Video đang được tạo'
-                : 'Tạo & theo dõi video'}
+                : promptConfirmed
+                  ? 'Sẵn sàng tạo video'
+                  : 'Chờ xác nhận ở bước 3'}
             </small>
           </span>
           {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
@@ -341,14 +375,13 @@ export default function Studio() {
       </section>
       ) : null}
 
-      {activeTab === 'step-23' ? (
-      <div className="tab-step-stack">
+      {activeTab === 'step-2' ? (
       <section className="step-card" id="step-2">
         <div className="step-head">
           <span className="step-number">2</span>
           <div>
             <h2>Chọn một prompt</h2>
-            <p>Mỗi phương án có mô tả tiếng Việt chi tiết để bạn hình dung cảnh quay trước khi chọn; prompt tiếng Anh vẫn có thể mở ra để xem đầy đủ.</p>
+            <p>Mỗi phương án có mô tả tiếng Việt chi tiết để bạn hình dung cảnh quay trước khi chọn.</p>
           </div>
         </div>
 
@@ -374,32 +407,59 @@ export default function Studio() {
                   <p className="prompt-why"><strong>Điểm nổi bật:</strong> {item.why}</p>
                 ) : null}
                 <button className="secondary-button" type="button" onClick={() => choosePrompt(index)}>
-                  {selectedIndex === index ? 'Đã chọn' : 'Chọn prompt này'}
+                  {selectedIndex === index ? 'Chọn lại / chỉnh sửa' : 'Chọn prompt này'}
                 </button>
               </article>
             ))}
           </div>
         )}
       </section>
+      ) : null}
 
+      {activeTab === 'step-3' ? (
       <section className="step-card" id="step-3">
         <div className="step-head">
           <span className="step-number">3</span>
           <div>
-            <h2>Chỉnh sửa prompt</h2>
-            <p>Bạn có thể sửa trực tiếp trước khi gửi sang Grok Video 3.</p>
+            <h2>Kiểm tra và xác nhận prompt</h2>
+            <p>Bạn có thể chỉnh sửa prompt lần cuối. Nhấn “Xác nhận prompt” để mở Bước 4; thao tác này chưa gửi yêu cầu tạo video.</p>
           </div>
         </div>
+
+        {selectedIndex !== null ? (
+          <div className="confirmed-choice-summary">
+            <span>Prompt đang chọn</span>
+            <strong>Phương án {selectedIndex + 1}: {suggestions[selectedIndex]?.title}</strong>
+            <p>{suggestions[selectedIndex]?.descriptionVi || suggestions[selectedIndex]?.why}</p>
+          </div>
+        ) : null}
+
         <textarea
           className="large-textarea prompt-editor"
           value={editedPrompt}
-          onChange={(event) => setEditedPrompt(event.target.value)}
+          onChange={(event) => {
+            setEditedPrompt(event.target.value);
+            setPromptConfirmed(false);
+          }}
           rows={11}
           placeholder="Chọn một prompt ở bước 2 để chỉnh sửa."
           disabled={selectedIndex === null}
         />
+
+        <div className="confirmation-actions">
+          <button className="secondary-button" type="button" onClick={() => setActiveTab('step-2')}>
+            Quay lại chọn prompt
+          </button>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={confirmPrompt}
+            disabled={selectedIndex === null || !editedPrompt.trim()}
+          >
+            {promptConfirmed ? 'Đã xác nhận · Sang Bước 4' : 'Xác nhận prompt · Sang Bước 4'}
+          </button>
+        </div>
       </section>
-      </div>
       ) : null}
 
       {activeTab === 'step-4' ? (
@@ -411,6 +471,13 @@ export default function Studio() {
             <p>Thiết lập đầu ra, gửi task và tự động kiểm tra trạng thái mỗi 7 giây.</p>
           </div>
         </div>
+
+        {promptConfirmed ? (
+          <div className="step4-confirmed-prompt">
+            <span>Prompt đã xác nhận ở Bước 3</span>
+            <p>{editedPrompt}</p>
+          </div>
+        ) : null}
 
         <div className="settings-grid">
           <label>
@@ -439,7 +506,7 @@ export default function Studio() {
         <button
           className="primary-button full-button"
           onClick={generateVideo}
-          disabled={videoLoading || !editedPrompt.trim() || !historyId}
+          disabled={videoLoading || !editedPrompt.trim() || !historyId || !promptConfirmed}
         >
           {videoLoading ? 'Đang gửi tác vụ…' : 'Tạo video với grok-video-3'}
         </button>
