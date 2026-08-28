@@ -7,12 +7,12 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     const historyId = String(body.historyId || '');
     const prompt = String(body.prompt || '').trim();
-    const referenceImages = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
-      .map(String)
-      .filter(Boolean)
+    const referenceImages: string[] = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
+      .map((value: unknown) => String(value))
+      .filter((url: string) => url.length > 0)
       .slice(0, 8);
 
     const settings: VideoSettings = {

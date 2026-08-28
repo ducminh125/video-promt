@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function DELETE(request: Request) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     const id = String(body.id || '');
     if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
     await deleteHistory(id);
