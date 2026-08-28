@@ -1,52 +1,26 @@
-import { updateTaskStatus } from '@/lib/db';
-import { shopAIKeyFetch } from '@/lib/shopaikey';
+import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
-export const maxDuration = 30;
-
-function text(value: unknown) {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-  return '';
-}
-
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ taskId: string }> },
-) {
+export async function POST(req: Request) {
   try {
-    const { taskId } = await context.params;
-    const response = await shopAIKeyFetch(`/v1/video/generations/${encodeURIComponent(taskId)}`, {
-      method: 'GET',
+    const body = await req.json();
+    const { prompt, imageUrl, ...otherData } = body;
+
+    // Backend bổ sung yêu cầu để đảm bảo tính đồng nhất
+    const systemPromptInjected = `
+${prompt}
+---
+[LƯU Ý BẮT BUỘC TỪ HỆ THỐNG]: Đặc điểm khuôn mặt, nhận dạng và ngoại hình của người xuất hiện trong video phải hoàn toàn đồng nhất với người được gửi trong ảnh minh họa.
+    `.trim();
+
+    // Thực hiện gọi API thật tới Mai Đức Minh'web / Shopaikey
+    // const res = await fetch('https://api.shopaikey.com/...', { method: 'POST', body: JSON.stringify({ prompt: systemPromptInjected, imageUrl }) })
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Đã tiếp nhận yêu cầu", 
+      injectedPrompt: systemPromptInjected 
     });
-
-    const raw = await response.text();
-    if (!response.ok) {
-      return Response.json({ error: `ShopAIKey status error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
-    }
-
-    let data: any;
-    try {
-      data = raw ? JSON.parse(raw) : {};
-    } catch {
-      return Response.json({ error: 'ShopAIKey status response is not valid JSON' }, { status: 502 });
-    }
-
-    const taskSource = data?.data ?? data ?? {};
-    const task = Array.isArray(taskSource) ? (taskSource[0] || {}) : taskSource;
-    const status = text(task.status) || 'unknown';
-    const progress = text(task.progress) || null;
-    const videoUrl = text(task.result_url) || text(task.video_url) || text(task.url) || null;
-    const failReason = text(task.fail_reason) || text(task.error?.message) || text(task.error) || null;
-
-    await updateTaskStatus({ taskId, status, progress, videoUrl, failReason });
-
-    return Response.json({ taskId, status, progress, videoUrl, failReason });
   } catch (error) {
-    console.error('status error', error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : 'Status check failed' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

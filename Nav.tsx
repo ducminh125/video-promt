@@ -1,21 +1,15 @@
+import React from 'react';
 import Link from 'next/link';
 
 export default function Nav() {
   return (
-    <header className="topbar">
-      <div className="shell nav-inner">
-        <Link href="/" className="brand">
-          <span className="brand-mark">V</span>
-          <span>
-            <strong>Video Prompt Studio</strong>
-            <small>GPT-5.4 → Grok Video 3</small>
-          </span>
-        </Link>
-        <nav className="nav-links" aria-label="Main navigation">
-          <Link href="/">Tạo video</Link>
-          <Link href="/history">Lịch sử</Link>
-        </nav>
+    <nav className="flex items-center justify-between p-4 bg-gray-900 text-white">
+      <Link href="/">
+        <h1 className="text-xl font-bold cursor-pointer">Mai Đức Minh'web</h1>
+      </Link>
+      <div>
+        {/* Các menu link khác */}
       </div>
-    </header>
+    </nav>
   );
 }

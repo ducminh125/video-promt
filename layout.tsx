@@ -1,19 +1,19 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import Nav from '@/components/Nav';
+import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Video Prompt Studio',
-  description: 'GPT-5.4 prompt suggestions and Grok Video 3 generation via ShopAIKey.',
-};
+  title: "Mai Đức Minh'web - Trình tạo Video & Ảnh",
+  description: "Ứng dụng AI của Mai Đức Minh'web",
+}
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="vi">
-      <body>
-        <Nav />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
-  );
+  )
 }
