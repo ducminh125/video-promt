@@ -44,12 +44,12 @@ function normalizeSuggestions(value: unknown): PromptSuggestion[] {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     const description = String(body.description || '').trim();
     const sourceMedia = (Array.isArray(body.sourceMedia) ? body.sourceMedia : []) as SourceMedia[];
-    const referenceImages = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
-      .map(String)
-      .filter(Boolean)
+    const referenceImages: string[] = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
+      .map((value: unknown) => String(value))
+      .filter((url: string) => url.length > 0)
       .slice(0, 8);
 
     if (description.length < 10) {
