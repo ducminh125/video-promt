@@ -39,6 +39,34 @@ export default function Studio() {
   const [promptConfirmed, setPromptConfirmed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const promptHints = [
+    {
+      label: '🎥 Chuyển động camera',
+      text: ' Chuyển động camera: slow dolly in, pan nhẹ, tracking shot mượt, góc quay điện ảnh.'
+    },
+    {
+      label: '🧍 Phong cách nhân vật',
+      text: ' Phong cách nhân vật: ngoại hình tự nhiên, biểu cảm rõ ràng, chuyển động chân thực, phong cách điện ảnh.'
+    },
+    {
+      label: '🌄 Khung cảnh xung quanh',
+      text: ' Khung cảnh: mô tả môi trường xung quanh, ánh sáng, thời tiết, chiều sâu không gian và các chi tiết nền.'
+    },
+    {
+      label: '💡 Ánh sáng & màu sắc',
+      text: ' Ánh sáng: cinematic lighting, màu sắc hài hòa, độ tương phản tự nhiên, chất lượng hình ảnh cao.'
+    },
+    {
+      label: '🎬 Phong cách video',
+      text: ' Phong cách video: cinematic, realistic, high detail, chuyển động tự nhiên, giống phim chuyên nghiệp.'
+    },
+  ];
+
+  function addPromptHint(text: string) {
+    invalidateDownstream();
+    setDescription((current) => `${current}${current.trim() ? '\\n' : ''}${text}`.trim());
+  }
+
   function invalidateDownstream() {
     if (!suggestions.length && !historyId && !videoState) return;
     setSuggestions([]);
@@ -331,6 +359,19 @@ export default function Studio() {
             <h2>Miêu tả nội dung</h2>
             <p>Nêu rõ chủ thể, hành động, bối cảnh, phong cách, camera và điều cần giữ nguyên.</p>
           </div>
+        </div>
+
+        <div className="hint-buttons">
+          {promptHints.map((hint) => (
+            <button
+              key={hint.label}
+              type="button"
+              className="secondary-button"
+              onClick={() => addPromptHint(hint.text)}
+            >
+              {hint.label}
+            </button>
+          ))}
         </div>
 
         <textarea

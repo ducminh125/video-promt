@@ -92,6 +92,16 @@ a { color: inherit; text-decoration: none; }
 .media-card strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
 .media-card span { color: var(--muted); font-size: 12px; }
 
+.hint-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+.hint-buttons .secondary-button {
+  padding: 9px 12px;
+  font-size: 13px;
+}
 .actions-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; }
 .muted { color: var(--muted); font-size: 13px; }
 .primary-button, .secondary-button {
