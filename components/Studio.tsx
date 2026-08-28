@@ -14,6 +14,8 @@ type VideoState = {
 
 const MAX_FILES = 4;
 
+type WorkflowTab = 'step-1' | 'step-23' | 'step-4';
+
 export default function Studio() {
   const [description, setDescription] = useState('');
   const [media, setMedia] = useState<SourceMedia[]>([]);
@@ -30,6 +32,7 @@ export default function Studio() {
   const [duration, setDuration] = useState(5);
   const [ratio, setRatio] = useState('16:9');
   const [resolution, setResolution] = useState<'720P' | '1080P'>('1080P');
+  const [activeTab, setActiveTab] = useState<WorkflowTab>('step-1');
   const inputRef = useRef<HTMLInputElement>(null);
 
   function invalidateDownstream() {
@@ -158,6 +161,7 @@ export default function Studio() {
       if (!response.ok) throw new Error(data.error || 'Không tạo được prompt');
       setSuggestions(data.suggestions);
       setHistoryId(data.historyId);
+      setActiveTab('step-23');
     } catch (promptError) {
       setError(promptError instanceof Error ? promptError.message : 'Không tạo được prompt');
     } finally {
@@ -168,7 +172,7 @@ export default function Studio() {
   function choosePrompt(index: number) {
     setSelectedIndex(index);
     setEditedPrompt(suggestions[index].prompt);
-    window.setTimeout(() => document.getElementById('step-3')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    setActiveTab('step-23');
   }
 
   async function generateVideo() {
@@ -192,7 +196,7 @@ export default function Studio() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không tạo được tác vụ video');
       setVideoState({ taskId: data.taskId, status: data.status || 'queued', progress: '0%' });
-      window.setTimeout(() => document.getElementById('step-4')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      setActiveTab('step-4');
     } catch (videoError) {
       setError(videoError instanceof Error ? videoError.message : 'Không tạo được video');
     } finally {
@@ -218,6 +222,54 @@ export default function Studio() {
 
       {error ? <div className="alert error-alert">{error}</div> : null}
 
+      <nav className="workflow-tabs" aria-label="Các bước tạo video">
+        <button
+          type="button"
+          className={`workflow-tab ${activeTab === 'step-1' ? 'active' : ''}`}
+          onClick={() => setActiveTab('step-1')}
+        >
+          <span className="workflow-tab-number">1</span>
+          <span className="workflow-tab-copy">
+            <strong>Bước 1</strong>
+            <small>Ý tưởng & tham chiếu</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`workflow-tab ${activeTab === 'step-23' ? 'active' : ''}`}
+          onClick={() => setActiveTab('step-23')}
+        >
+          <span className="workflow-tab-number">2–3</span>
+          <span className="workflow-tab-copy">
+            <strong>Bước 2–3</strong>
+            <small>{suggestions.length ? 'Chọn & chỉnh prompt' : 'Chờ prompt từ bước 1'}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`workflow-tab ${activeTab === 'step-4' ? 'active' : ''}`}
+          onClick={() => setActiveTab('step-4')}
+        >
+          <span className="workflow-tab-number">4</span>
+          <span className="workflow-tab-copy">
+            <strong>Bước 4</strong>
+            <small>
+              {videoState
+                ? videoState.status.toUpperCase() === 'SUCCESS'
+                  ? 'Video đã hoàn thành'
+                  : videoState.status.toUpperCase() === 'FAILURE'
+                    ? 'Tạo video thất bại'
+                    : 'Video đang được tạo'
+                : 'Tạo & theo dõi video'}
+            </small>
+          </span>
+          {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
+            <span className="tab-live-dot" aria-label="Video đang được tạo" />
+          ) : null}
+        </button>
+      </nav>
+
+      {activeTab === 'step-1' ? (
       <section className="step-card" id="step-1">
         <div className="step-head">
           <span className="step-number">1</span>
@@ -287,13 +339,16 @@ export default function Studio() {
           </button>
         </div>
       </section>
+      ) : null}
 
+      {activeTab === 'step-23' ? (
+      <div className="tab-step-stack">
       <section className="step-card" id="step-2">
         <div className="step-head">
           <span className="step-number">2</span>
           <div>
             <h2>Chọn một prompt</h2>
-            <p>Ba phương án có cách dàn dựng khác nhau nhưng cùng bám sát nội dung bước 1.</p>
+            <p>Mỗi phương án có mô tả tiếng Việt chi tiết để bạn hình dung cảnh quay trước khi chọn; prompt tiếng Anh vẫn có thể mở ra để xem đầy đủ.</p>
           </div>
         </div>
 
@@ -307,8 +362,17 @@ export default function Studio() {
                   <span>Phương án {index + 1}</span>
                   <strong>{item.title}</strong>
                 </div>
-                <p className="prompt-body">{item.prompt}</p>
-                <p className="prompt-why">{item.why}</p>
+                <div className="prompt-description-vi">
+                  <span>Mô tả tiếng Việt</span>
+                  <p>{item.descriptionVi || item.why}</p>
+                </div>
+                <details className="prompt-english-details">
+                  <summary>Xem prompt tiếng Anh gửi cho AI</summary>
+                  <p className="prompt-body">{item.prompt}</p>
+                </details>
+                {item.why ? (
+                  <p className="prompt-why"><strong>Điểm nổi bật:</strong> {item.why}</p>
+                ) : null}
                 <button className="secondary-button" type="button" onClick={() => choosePrompt(index)}>
                   {selectedIndex === index ? 'Đã chọn' : 'Chọn prompt này'}
                 </button>
@@ -335,7 +399,10 @@ export default function Studio() {
           disabled={selectedIndex === null}
         />
       </section>
+      </div>
+      ) : null}
 
+      {activeTab === 'step-4' ? (
       <section className="step-card" id="step-4">
         <div className="step-head">
           <span className="step-number">4</span>
@@ -377,6 +444,16 @@ export default function Studio() {
           {videoLoading ? 'Đang gửi tác vụ…' : 'Tạo video với grok-video-3'}
         </button>
 
+        {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
+          <div className="video-creating-notice" role="status" aria-live="polite">
+            <span className="video-creating-spinner" aria-hidden="true" />
+            <div>
+              <strong>Đã ghi nhận yêu cầu tạo video</strong>
+              <p>Video đang được tạo. Bạn có thể ở lại tab này để theo dõi; trạng thái sẽ tự động cập nhật mỗi 7 giây.</p>
+            </div>
+          </div>
+        ) : null}
+
         {videoState ? (
           <div className="result-panel">
             <div className="result-status-row">
@@ -389,10 +466,19 @@ export default function Studio() {
 
             {videoState.status === 'SUCCESS' && videoState.videoUrl ? (
               <div className="video-result">
+                <div className="history-saved-note">
+                  <strong>Video đã được ghi vào lịch sử</strong>
+                  <span>Lịch sử chỉ hiển thị prompt bạn đã chọn để tạo video này.</span>
+                </div>
                 <video controls src={videoState.videoUrl} preload="metadata" />
-                <a className="secondary-button link-button" href={videoState.videoUrl} target="_blank" rel="noreferrer">
-                  Mở video gốc
-                </a>
+                <div className="video-result-actions">
+                  <a className="secondary-button link-button" href={videoState.videoUrl} target="_blank" rel="noreferrer">
+                    Mở video gốc
+                  </a>
+                  <a className="secondary-button link-button" href="/history">
+                    Xem trong lịch sử
+                  </a>
+                </div>
               </div>
             ) : null}
 
@@ -402,6 +488,7 @@ export default function Studio() {
           </div>
         ) : null}
       </section>
+      ) : null}
     </main>
   );
 }

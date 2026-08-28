@@ -10,8 +10,7 @@ Web app 4 bước để tạo video bằng API ShopAIKey:
 Có trang `/history` riêng để lưu:
 
 - mô tả ban đầu;
-- 3 prompt GPT-5.4;
-- prompt cuối cùng đã chọn/chỉnh sửa;
+- chỉ prompt cuối cùng đã chọn/chỉnh sửa để tạo video;
 - ảnh/frame tham chiếu;
 - cấu hình video;
 - task id, trạng thái, tiến độ;
@@ -143,7 +142,7 @@ Browser
 ## Lưu ý vận hành
 
 - `metadata.images` dùng URL public. Không upload tài liệu nhạy cảm nếu bạn không muốn chúng nằm trên public Blob URL.
-- `/history` lưu URL video kết quả do ShopAIKey trả về, không sao chép toàn bộ video về Blob.
+- `/history` chỉ hiển thị các tác vụ đã chọn prompt và gửi tạo video; 3 prompt gợi ý không còn hiển thị trong lịch sử. URL video kết quả do ShopAIKey trả về được lưu cùng bản ghi để phát lại trong lịch sử; app chưa sao chép toàn bộ video về Blob.
 - Tỉ lệ mặc định là `16:9`; UI cũng có `9:16`, `1:1`, `3:2`, `2:3`. Nếu upstream giới hạn một tỉ lệ cụ thể, lỗi API sẽ được hiển thị nguyên nhân trên web.
 - Polling mặc định mỗi 7 giây, phù hợp hướng dẫn 5–10 giây của ShopAIKey.
 - Nên bật Vercel Spend Management/rate limit nếu mở ứng dụng cho nhiều người.

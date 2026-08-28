@@ -86,7 +86,7 @@ export default function HistoryClient() {
       </div>
 
       {!items.length ? (
-        <div className="empty-state">Chưa có prompt hoặc video nào được tạo.</div>
+        <div className="empty-state">Chưa có video nào được tạo. Video sẽ xuất hiện ở đây sau khi bạn chọn prompt và gửi tác vụ tạo video.</div>
       ) : (
         <div className="history-list">
           {items.map((item) => (
@@ -103,26 +103,9 @@ export default function HistoryClient() {
 
               <h2>{item.description}</h2>
 
-              {Array.isArray(item.prompt_options) && item.prompt_options.length ? (
-                <details>
-                  <summary>3 prompt GPT-5.4</summary>
-                  <div className="history-prompts">
-                    {item.prompt_options.map((prompt, index) => (
-                      <div key={`${item.id}-${index}`}>
-                        <strong>{index + 1}. {prompt.title}</strong>
-                        <p>{prompt.prompt}</p>
-                        <button className="text-button" type="button" onClick={() => copyPrompt(prompt.prompt)}>
-                          Sao chép
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-
               {item.selected_prompt ? (
                 <div className="selected-prompt-box">
-                  <span>Prompt đã dùng</span>
+                  <span>Prompt bạn đã chọn và dùng để tạo video</span>
                   <p>{item.selected_prompt}</p>
                   <button className="text-button" type="button" onClick={() => copyPrompt(item.selected_prompt!)}>
                     Sao chép prompt

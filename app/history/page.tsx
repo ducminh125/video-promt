@@ -8,8 +8,8 @@ export default function HistoryPage() {
       <section className="hero-panel history-hero">
         <div>
           <span className="eyebrow">LIBRARY</span>
-          <h1>Lịch sử prompt & video</h1>
-          <p>Toàn bộ 3 prompt gợi ý, prompt đã chỉnh, task Grok Video 3 và video hoàn thành được lưu tại đây.</p>
+          <h1>Lịch sử video</h1>
+          <p>Chỉ prompt bạn đã chọn để tạo video, trạng thái tác vụ và video hoàn thành được lưu và hiển thị tại đây.</p>
         </div>
       </section>
       <HistoryClient />

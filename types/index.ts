@@ -1,6 +1,7 @@
 export type PromptSuggestion = {
   title: string;
   prompt: string;
+  descriptionVi: string;
   why: string;
 };
 

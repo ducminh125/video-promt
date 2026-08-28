@@ -120,6 +120,7 @@ export async function listHistory(limit = 100) {
   const sql = getSql();
   return sql`
     SELECT * FROM video_history
+    WHERE selected_prompt IS NOT NULL AND task_id IS NOT NULL
     ORDER BY created_at DESC
     LIMIT ${limit}
   `;
