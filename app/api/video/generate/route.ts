@@ -5,6 +5,9 @@ import type { VideoSettings } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+const FIXED_VIDEO_DURATION = 10;
+const VIDEO_MODEL = 'grok-video-3-10s';
+
 function asNonEmptyString(value: unknown) {
   if (typeof value === 'string' && value.trim()) return value.trim();
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
@@ -47,30 +50,43 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Record<string, unknown>;
     const historyId = String(body.historyId || '');
     const prompt = String(body.prompt || '').trim();
+    const descriptionVi = String(body.descriptionVi || '').trim();
     const referenceImages: string[] = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
       .map((value: unknown) => String(value))
       .filter((url: string) => url.length > 0)
       .slice(0, 8);
 
     const settings: VideoSettings = {
-      duration: Math.max(1, Math.min(30, Number(body.duration) || 5)),
+      duration: FIXED_VIDEO_DURATION,
       ratio: String(body.ratio || '16:9'),
       resolution: body.resolution === '720P' ? '720P' : '1080P',
     };
 
-    if (!historyId || !prompt) {
-      return Response.json({ error: 'Missing historyId or prompt' }, { status: 400 });
+    if (!historyId || !descriptionVi) {
+      return Response.json({ error: 'Missing historyId or Vietnamese description' }, { status: 400 });
     }
+
+    const generationPrompt = [
+      'USER-APPROVED VIETNAMESE DIRECTION (authoritative; follow this first):',
+      descriptionVi,
+      prompt
+        ? `\nORIGINAL PRODUCTION PROMPT (use only for technical detail; ignore anything that conflicts with the Vietnamese direction):\n${prompt}`
+        : '',
+      '\nCreate one continuous, coherent 10-second video. Preserve reference-image identity, layout, materials, logos/text and defining details unless the Vietnamese direction explicitly asks to change them.',
+    ].filter(Boolean).join('\n');
 
     const response = await shopAIKeyFetch('/v1/video/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'grok-video-3',
-        prompt,
+        model: VIDEO_MODEL,
+        prompt: generationPrompt,
+        // grok-video-3-10s is treated as a fixed 10-second preset.
+        // Keep duration=10 in both supported ShopAIKey shapes for compatibility, but never accept a client override.
+        duration: FIXED_VIDEO_DURATION,
         metadata: {
           ...(referenceImages.length ? { images: referenceImages } : {}),
-          duration: settings.duration,
+          duration: FIXED_VIDEO_DURATION,
           ratio: settings.ratio,
           resolution: settings.resolution,
         },
@@ -116,7 +132,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await attachVideoTask({ historyId, prompt, taskId, settings });
+    await attachVideoTask({ historyId, prompt: descriptionVi, taskId, settings, modelVideo: VIDEO_MODEL });
 
     return Response.json({
       taskId,

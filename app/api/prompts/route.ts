@@ -84,14 +84,14 @@ export async function POST(request: Request) {
           {
             role: 'system',
             content: [
-              'You are a senior AI video prompt director specialized in Grok Video 3.',
+              'You are a senior AI video prompt director specialized in Grok Video 3 fixed 10-second clips.',
               'Return JSON only. Do not use markdown fences.',
               'Schema: {"suggestions":[{"title":"Vietnamese short title","prompt":"English production-ready video prompt","description_vi":"Detailed Vietnamese description of what the viewer will see","why":"Vietnamese concise rationale"}]}.',
               'Return exactly 3 suggestions.',
               'For each suggestion, description_vi must be concrete Vietnamese, around 4-6 sentences. Explain the visible scene, subject/action, camera framing and movement, lighting/color/mood, and the important details that will be preserved. Write for a non-technical user so they can understand the expected video before selecting the prompt.',
               'Do not merely translate the English prompt word-for-word; summarize it naturally and specifically in Vietnamese.',
-              'Each prompt should be self-contained and ready to send directly to grok-video-3.',
-              'Include subject, action, environment, camera/lens/movement, composition, lighting, material/texture fidelity, motion behavior, mood, and continuity constraints when relevant.',
+              'Each prompt should be self-contained and optimized for a single continuous 10-second clip sent to grok-video-3-10s.',
+              'Include subject, action, environment, camera/lens/movement, composition, lighting, material/texture fidelity, motion behavior, mood, continuity constraints, and pacing that can realistically fit within 10 seconds when relevant.',
               'When reference images are supplied, preserve identity, architecture, proportions, layout, materials, logos/text already present, and other defining details unless the user asks to change them.',
               'Do not invent extra text, watermarks, logos, people, buildings, or objects unless the user requests them.',
               'Make the 3 options meaningfully different: cinematic realism, dynamic camera/storytelling, and controlled premium/product/architectural style when applicable.',

@@ -4,7 +4,7 @@ import Nav from '@/components/Nav';
 
 export const metadata: Metadata = {
   title: 'Video Prompt Studio',
-  description: 'GPT-5.4 prompt suggestions and Grok Video 3 generation via ShopAIKey.',
+  description: 'GPT-5.4 prompt suggestions and fixed 10-second Grok Video 3 generation via ShopAIKey.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

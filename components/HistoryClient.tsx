@@ -103,12 +103,21 @@ export default function HistoryClient() {
 
               <h2>{item.description}</h2>
 
+              {item.settings?.duration ? (
+                <div className="history-request-settings">
+                  <span>Thiết lập đã gửi:</span>
+                  <strong>{item.settings.duration} giây</strong>
+                  {item.settings.ratio ? <span>· {item.settings.ratio}</span> : null}
+                  {item.settings.resolution ? <span>· {item.settings.resolution}</span> : null}
+                </div>
+              ) : null}
+
               {item.selected_prompt ? (
                 <div className="selected-prompt-box">
-                  <span>Prompt bạn đã chọn và dùng để tạo video</span>
+                  <span>Mô tả tiếng Việt bạn đã xác nhận để tạo video</span>
                   <p>{item.selected_prompt}</p>
                   <button className="text-button" type="button" onClick={() => copyPrompt(item.selected_prompt!)}>
-                    Sao chép prompt
+                    Sao chép mô tả
                   </button>
                 </div>
               ) : null}

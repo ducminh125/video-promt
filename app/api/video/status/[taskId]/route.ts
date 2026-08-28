@@ -10,6 +10,14 @@ function text(value: unknown) {
   return '';
 }
 
+function normalizeStatus(value: unknown) {
+  const raw = text(value).trim();
+  const lower = raw.toLowerCase();
+  if (['success', 'succeeded', 'completed', 'complete'].includes(lower)) return 'SUCCESS';
+  if (['failure', 'failed', 'error', 'cancelled', 'canceled'].includes(lower)) return 'FAILURE';
+  return raw || 'unknown';
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ taskId: string }> },
@@ -34,9 +42,16 @@ export async function GET(
 
     const taskSource = data?.data ?? data ?? {};
     const task = Array.isArray(taskSource) ? (taskSource[0] || {}) : taskSource;
-    const status = text(task.status) || 'unknown';
+    const status = normalizeStatus(task.status || data?.status);
     const progress = text(task.progress) || null;
-    const videoUrl = text(task.result_url) || text(task.video_url) || text(task.url) || null;
+    const videoUrl =
+      text(task.result_url) ||
+      text(task.video_url) ||
+      text(task.url) ||
+      text(task.output?.video_url) ||
+      text(task.output?.url) ||
+      text(data?.video_url) ||
+      null;
     const failReason = text(task.fail_reason) || text(task.error?.message) || text(task.error) || null;
 
     await updateTaskStatus({ taskId, status, progress, videoUrl, failReason });

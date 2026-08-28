@@ -5,7 +5,7 @@ Web app 4 bước để tạo video bằng API ShopAIKey:
 1. Nhập mô tả + đính kèm ảnh hoặc video tham chiếu.
 2. GPT-5.4 tạo đúng 3 gợi ý prompt video.
 3. Chọn và chỉnh sửa prompt.
-4. Gửi prompt sang `grok-video-3`, polling trạng thái và hiển thị video.
+4. Gửi prompt sang `grok-video-3-10s`, polling trạng thái và hiển thị video.
 
 Có trang `/history` riêng để lưu:
 
@@ -19,14 +19,14 @@ Có trang `/history` riêng để lưu:
 ## Kiến trúc
 
 - **Next.js App Router + TypeScript**: frontend + server API routes.
-- **ShopAIKey**: `gpt-5.4` và `grok-video-3`.
+- **ShopAIKey**: `gpt-5.4` và `grok-video-3-10s`.
 - **Vercel Blob**: lưu ảnh/frame tham chiếu dưới URL public để ShopAIKey có thể đọc.
 - **Neon Postgres**: lịch sử prompt/video. Bảng được tự tạo ở request đầu tiên.
 - **Basic Auth tùy chọn**: bảo vệ toàn bộ web/API khỏi người lạ dùng credit.
 
 ### Cách xử lý video tham chiếu
 
-Tài liệu Grok Video của ShopAIKey hiện mô tả `metadata.images` nhưng chưa mô tả input video reference trực tiếp. Vì vậy web **không upload file video gốc**. Trình duyệt lấy 4 frame đại diện từ video, nén thành JPEG rồi upload các frame đó. GPT-5.4 và Grok Video 3 nhận các frame làm tham chiếu hình ảnh.
+Tài liệu Grok Video của ShopAIKey hiện mô tả `metadata.images` nhưng chưa mô tả input video reference trực tiếp. Vì vậy web **không upload file video gốc**. Trình duyệt lấy 4 frame đại diện từ video, nén thành JPEG rồi upload các frame đó. GPT-5.4 và Grok Video 3 10s nhận các frame làm tham chiếu hình ảnh.
 
 Cách này cũng tránh giới hạn payload của Vercel Functions đối với file video lớn.
 
@@ -61,7 +61,7 @@ App gọi:
 
 ```text
 POST /v1/chat/completions        model: gpt-5.4
-POST /v1/video/generations       model: grok-video-3
+POST /v1/video/generations       model: grok-video-3-10s
 GET  /v1/video/generations/:id
 ```
 
@@ -131,7 +131,7 @@ Browser
   │     └─ Neon: status=PROMPTS_READY
   │
   ├─ POST /api/video/generate
-  │     ├─ ShopAIKey /v1/video/generations (grok-video-3)
+  │     ├─ ShopAIKey /v1/video/generations (grok-video-3-10s)
   │     └─ Neon: task_id + queued
   │
   └─ GET /api/video/status/:taskId every 7s
@@ -145,6 +145,7 @@ Browser
 - `/history` chỉ hiển thị các tác vụ đã chọn prompt và gửi tạo video; 3 prompt gợi ý không còn hiển thị trong lịch sử. URL video kết quả do ShopAIKey trả về được lưu cùng bản ghi để phát lại trong lịch sử; app chưa sao chép toàn bộ video về Blob.
 - Tỉ lệ mặc định là `16:9`; UI cũng có `9:16`, `1:1`, `3:2`, `2:3`. Nếu upstream giới hạn một tỉ lệ cụ thể, lỗi API sẽ được hiển thị nguyên nhân trên web.
 - Polling mặc định mỗi 7 giây, phù hợp hướng dẫn 5–10 giây của ShopAIKey.
+- Thời lượng video mặc định là **10 giây**. Backend gửi `duration` ở cả top-level request và `metadata.duration` để tương thích với hai dạng tài liệu ShopAIKey.
 - Nên bật Vercel Spend Management/rate limit nếu mở ứng dụng cho nhiều người.
 
 ## Cấu trúc chính

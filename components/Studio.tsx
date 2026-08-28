@@ -13,6 +13,7 @@ type VideoState = {
 };
 
 const MAX_FILES = 4;
+const DEFAULT_VIDEO_DURATION = 10;
 
 type WorkflowTab = 'step-1' | 'step-2' | 'step-3' | 'step-4';
 
@@ -24,12 +25,14 @@ export default function Studio() {
   const [suggestions, setSuggestions] = useState<PromptSuggestion[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [editedPrompt, setEditedPrompt] = useState('');
+  const [editedDescriptionVi, setEditedDescriptionVi] = useState('');
   const [historyId, setHistoryId] = useState('');
   const [promptLoading, setPromptLoading] = useState(false);
+  const [promptWaitSeconds, setPromptWaitSeconds] = useState(0);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoState, setVideoState] = useState<VideoState | null>(null);
   const [error, setError] = useState('');
-  const [duration, setDuration] = useState(5);
+  const duration = DEFAULT_VIDEO_DURATION;
   const [ratio, setRatio] = useState('16:9');
   const [resolution, setResolution] = useState<'720P' | '1080P'>('1080P');
   const [activeTab, setActiveTab] = useState<WorkflowTab>('step-1');
@@ -41,6 +44,7 @@ export default function Studio() {
     setSuggestions([]);
     setSelectedIndex(null);
     setEditedPrompt('');
+    setEditedDescriptionVi('');
     setHistoryId('');
     setVideoState(null);
     setPromptConfirmed(false);
@@ -50,6 +54,19 @@ export default function Studio() {
     () => media.flatMap((item) => item.referenceUrls).slice(0, 8),
     [media],
   );
+
+
+  useEffect(() => {
+    if (!promptLoading) {
+      setPromptWaitSeconds(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      setPromptWaitSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [promptLoading]);
 
   useEffect(() => {
     if (!videoState?.taskId) return;
@@ -148,6 +165,7 @@ export default function Studio() {
     setSuggestions([]);
     setSelectedIndex(null);
     setEditedPrompt('');
+    setEditedDescriptionVi('');
     setVideoState(null);
     setPromptConfirmed(false);
     try {
@@ -175,14 +193,15 @@ export default function Studio() {
   function choosePrompt(index: number) {
     setSelectedIndex(index);
     setEditedPrompt(suggestions[index].prompt);
+    setEditedDescriptionVi(suggestions[index].descriptionVi || suggestions[index].why || '');
     setPromptConfirmed(false);
     setError('');
     setActiveTab('step-3');
   }
 
   function confirmPrompt() {
-    if (selectedIndex === null || !editedPrompt.trim()) {
-      setError('Hãy chọn và kiểm tra prompt trước khi xác nhận.');
+    if (selectedIndex === null || !editedDescriptionVi.trim()) {
+      setError('Hãy chọn và điều chỉnh mô tả tiếng Việt trước khi xác nhận.');
       return;
     }
     setError('');
@@ -191,8 +210,8 @@ export default function Studio() {
   }
 
   async function generateVideo() {
-    if (!editedPrompt.trim() || !historyId || !promptConfirmed) {
-      setError('Hãy xác nhận prompt ở Bước 3 trước khi tạo video.');
+    if (!editedDescriptionVi.trim() || !historyId || !promptConfirmed) {
+      setError('Hãy xác nhận mô tả tiếng Việt ở Bước 3 trước khi tạo video.');
       return;
     }
     setError('');
@@ -205,6 +224,7 @@ export default function Studio() {
         body: JSON.stringify({
           historyId,
           prompt: editedPrompt,
+          descriptionVi: editedDescriptionVi,
           referenceImages,
           duration,
           ratio,
@@ -229,7 +249,7 @@ export default function Studio() {
           <span className="eyebrow">AI VIDEO WORKFLOW</span>
           <h1>Từ ý tưởng đến video trong 4 bước</h1>
           <p>
-            Miêu tả nội dung, thêm ảnh hoặc video tham chiếu, nhận 3 prompt từ GPT-5.4 rồi tạo video bằng Grok Video 3.
+            Miêu tả nội dung, thêm ảnh hoặc video tham chiếu, nhận 3 phương án từ GPT-5.4 rồi tạo video 10 giây bằng Grok Video 3.
           </p>
         </div>
         <div className="hero-badge">
@@ -273,7 +293,7 @@ export default function Studio() {
           <span className="workflow-tab-number">3</span>
           <span className="workflow-tab-copy">
             <strong>Bước 3</strong>
-            <small>{selectedIndex !== null ? (promptConfirmed ? 'Prompt đã xác nhận' : 'Kiểm tra & xác nhận') : 'Chưa chọn prompt'}</small>
+            <small>{selectedIndex !== null ? (promptConfirmed ? 'Mô tả đã xác nhận' : 'Điều chỉnh mô tả tiếng Việt') : 'Chưa chọn phương án'}</small>
           </span>
         </button>
         <button
@@ -363,7 +383,7 @@ export default function Studio() {
         ) : null}
 
         <div className="actions-row">
-          <span className="muted">{referenceImages.length} ảnh/frame sẽ được gửi cho GPT-5.4 và Grok Video 3.</span>
+          <span className="muted">{referenceImages.length} ảnh/frame sẽ được gửi cho GPT-5.4 và Grok Video 3 (10s).</span>
           <button
             className="primary-button"
             onClick={generatePrompts}
@@ -372,6 +392,26 @@ export default function Studio() {
             {promptLoading ? 'GPT-5.4 đang tạo 3 prompt…' : 'Tạo 3 gợi ý prompt'}
           </button>
         </div>
+
+        {promptLoading ? (
+          <div className="prompt-waiting-panel" role="status" aria-live="polite">
+            <span className="prompt-waiting-spinner" aria-hidden="true" />
+            <div className="prompt-waiting-content">
+              <div className="prompt-waiting-title">
+                <strong>Hệ thống đang xử lý — không bị treo</strong>
+                <span>{promptWaitSeconds}s</span>
+              </div>
+              <p>GPT-5.4 đang đọc mô tả và ảnh/frame tham chiếu để xây dựng 3 phương án video. Vui lòng giữ trang này mở cho đến khi tự động chuyển sang Bước 2.</p>
+              <div className="prompt-waiting-progress" aria-hidden="true"><span /></div>
+              <div className="prompt-waiting-steps">
+                <span className="active">Phân tích yêu cầu</span>
+                <span className={promptWaitSeconds >= 4 ? 'active' : ''}>Dựng 3 phương án</span>
+                <span className={promptWaitSeconds >= 9 ? 'active' : ''}>Hoàn thiện mô tả tiếng Việt</span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
       </section>
       ) : null}
 
@@ -421,14 +461,14 @@ export default function Studio() {
         <div className="step-head">
           <span className="step-number">3</span>
           <div>
-            <h2>Kiểm tra và xác nhận prompt</h2>
-            <p>Bạn có thể chỉnh sửa prompt lần cuối. Nhấn “Xác nhận prompt” để mở Bước 4; thao tác này chưa gửi yêu cầu tạo video.</p>
+            <h2>Điều chỉnh mô tả bằng tiếng Việt</h2>
+            <p>Chỉnh trực tiếp nội dung bạn muốn nhìn thấy trong video bằng tiếng Việt. Mô tả đã xác nhận sẽ là chỉ dẫn ưu tiên khi Grok tạo video.</p>
           </div>
         </div>
 
         {selectedIndex !== null ? (
           <div className="confirmed-choice-summary">
-            <span>Prompt đang chọn</span>
+            <span>Phương án đang chọn</span>
             <strong>Phương án {selectedIndex + 1}: {suggestions[selectedIndex]?.title}</strong>
             <p>{suggestions[selectedIndex]?.descriptionVi || suggestions[selectedIndex]?.why}</p>
           </div>
@@ -436,13 +476,13 @@ export default function Studio() {
 
         <textarea
           className="large-textarea prompt-editor"
-          value={editedPrompt}
+          value={editedDescriptionVi}
           onChange={(event) => {
-            setEditedPrompt(event.target.value);
+            setEditedDescriptionVi(event.target.value);
             setPromptConfirmed(false);
           }}
           rows={11}
-          placeholder="Chọn một prompt ở bước 2 để chỉnh sửa."
+          placeholder="Ví dụ: Giữ nguyên khuôn mặt và trang phục. Nhân vật bước chậm về phía camera, máy quay dolly lùi nhẹ, ánh sáng vàng ấm..."
           disabled={selectedIndex === null}
         />
 
@@ -454,9 +494,9 @@ export default function Studio() {
             className="primary-button"
             type="button"
             onClick={confirmPrompt}
-            disabled={selectedIndex === null || !editedPrompt.trim()}
+            disabled={selectedIndex === null || !editedDescriptionVi.trim()}
           >
-            {promptConfirmed ? 'Đã xác nhận · Sang Bước 4' : 'Xác nhận prompt · Sang Bước 4'}
+            {promptConfirmed ? 'Đã xác nhận · Sang Bước 4' : 'Xác nhận mô tả · Sang Bước 4'}
           </button>
         </div>
       </section>
@@ -467,22 +507,23 @@ export default function Studio() {
         <div className="step-head">
           <span className="step-number">4</span>
           <div>
-            <h2>Tạo video bằng Grok Video 3</h2>
-            <p>Thiết lập đầu ra, gửi task và tự động kiểm tra trạng thái mỗi 7 giây.</p>
+            <h2>Tạo video bằng Grok Video 3 · 10s</h2>
+            <p>Sử dụng model grok-video-3-10s cố định 10 giây, gửi task và tự động kiểm tra trạng thái mỗi 7 giây.</p>
           </div>
         </div>
 
         {promptConfirmed ? (
           <div className="step4-confirmed-prompt">
-            <span>Prompt đã xác nhận ở Bước 3</span>
-            <p>{editedPrompt}</p>
+            <span>Mô tả tiếng Việt đã xác nhận ở Bước 3</span>
+            <p>{editedDescriptionVi}</p>
           </div>
         ) : null}
 
         <div className="settings-grid">
           <label>
-            <span>Thời lượng (giây)</span>
-            <input type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
+            <span>Thời lượng</span>
+            <input type="number" value={10} disabled />
+            <small className="muted">Cố định 10 giây bởi model grok-video-3-10s</small>
           </label>
           <label>
             <span>Tỉ lệ</span>
@@ -506,9 +547,9 @@ export default function Studio() {
         <button
           className="primary-button full-button"
           onClick={generateVideo}
-          disabled={videoLoading || !editedPrompt.trim() || !historyId || !promptConfirmed}
+          disabled={videoLoading || !editedDescriptionVi.trim() || !historyId || !promptConfirmed}
         >
-          {videoLoading ? 'Đang gửi tác vụ…' : 'Tạo video với grok-video-3'}
+          {videoLoading ? 'Đang gửi tác vụ…' : 'Tạo video 10s với grok-video-3-10s'}
         </button>
 
         {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
@@ -516,7 +557,7 @@ export default function Studio() {
             <span className="video-creating-spinner" aria-hidden="true" />
             <div>
               <strong>Đã ghi nhận yêu cầu tạo video</strong>
-              <p>Video đang được tạo. Bạn có thể ở lại tab này để theo dõi; trạng thái sẽ tự động cập nhật mỗi 7 giây.</p>
+              <p>Video đang được tạo trên ShopAIKey. Sau khi thấy thông báo này, task đã được lưu vào lịch sử và bạn có thể đóng tab. Khi mở lại Lịch sử, hệ thống sẽ tự đồng bộ trạng thái và video hoàn tất.</p>
             </div>
           </div>
         ) : null}
@@ -535,7 +576,7 @@ export default function Studio() {
               <div className="video-result">
                 <div className="history-saved-note">
                   <strong>Video đã được ghi vào lịch sử</strong>
-                  <span>Lịch sử chỉ hiển thị prompt bạn đã chọn để tạo video này.</span>
+                  <span>Lịch sử chỉ hiển thị mô tả tiếng Việt bạn đã xác nhận để tạo video này.</span>
                 </div>
                 <video controls src={videoState.videoUrl} preload="metadata" />
                 <div className="video-result-actions">

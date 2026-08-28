@@ -8,7 +8,7 @@ export default function Nav() {
           <span className="brand-mark">V</span>
           <span>
             <strong>Video Prompt Studio</strong>
-            <small>GPT-5.4 → Grok Video 3</small>
+            <small>GPT-5.4 → Grok Video 3 · 10s</small>
           </span>
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
