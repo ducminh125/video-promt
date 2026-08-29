@@ -7,12 +7,12 @@ export default function Nav() {
         <Link href="/" className="brand">
           <span className="brand-mark">V</span>
           <span>
-            <strong>Video Prompt Studio</strong>
-            <small>GPT-5.4 → Grok Video 3 · 10s</small>
+            <strong>Mai Đức Minh&apos;web AI Studio</strong>
+            <small>GPT-5.4 · Grok Video 3 · GPT-Image-2</small>
           </span>
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
-          <Link href="/">Tạo video</Link>
+          <Link href="/">Studio AI</Link>
           <Link href="/history">Lịch sử</Link>
         </nav>
       </div>

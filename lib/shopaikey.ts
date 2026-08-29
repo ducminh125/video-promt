@@ -3,7 +3,7 @@ const DEFAULT_BASE_URL = 'https://api.shopaikey.com';
 export function getShopAIKeyConfig() {
   const apiKey = process.env.SHOPAIKEY_API_KEY;
   if (!apiKey) {
-    throw new Error('Missing SHOPAIKEY_API_KEY');
+    throw new Error("Thiếu cấu hình Mai Đức Minh'web API (SHOPAIKEY_API_KEY).");
   }
 
   const baseUrl = (process.env.SHOPAIKEY_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '');

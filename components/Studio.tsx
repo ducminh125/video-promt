@@ -17,7 +17,12 @@ const DEFAULT_VIDEO_DURATION = 10;
 
 type WorkflowTab = 'step-1' | 'step-2' | 'step-3' | 'step-4';
 
-export default function Studio() {
+type StudioProps = {
+  seedReference?: { id: string; url: string; name?: string } | null;
+  onSeedReferenceConsumed?: () => void;
+};
+
+export default function Studio({ seedReference, onSeedReferenceConsumed }: StudioProps = {}) {
   const [description, setDescription] = useState('');
   const [media, setMedia] = useState<SourceMedia[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -57,6 +62,10 @@ export default function Studio() {
       text: ' Ánh sáng: cinematic lighting, màu sắc hài hòa, độ tương phản tự nhiên, chất lượng hình ảnh cao.'
     },
     {
+      label: '🎙️ Giọng nói / thoại',
+      text: ' Giọng nói / thoại: nêu rõ ngôn ngữ, giọng vùng miền nếu cần, giới tính/độ tuổi/chất giọng, câu thoại chính xác (nếu có), tốc độ, cảm xúc, độ rõ lời và yêu cầu khớp khẩu hình tự nhiên.'
+    },
+    {
       label: '🎬 Phong cách video',
       text: ' Phong cách video: cinematic, realistic, high detail, chuyển động tự nhiên, giống phim chuyên nghiệp.'
     },
@@ -82,6 +91,26 @@ export default function Studio() {
     () => media.flatMap((item) => item.referenceUrls).slice(0, 8),
     [media],
   );
+
+  useEffect(() => {
+    if (!seedReference?.url) return;
+    invalidateDownstream();
+    setMedia((current) => {
+      if (current.some((item) => item.id === seedReference.id || item.referenceUrls.includes(seedReference.url))) return current;
+      const generatedReference: SourceMedia = {
+        id: seedReference.id,
+        name: seedReference.name || 'Ảnh tạo bởi AI',
+        kind: 'image',
+        previewUrl: seedReference.url,
+        referenceUrls: [seedReference.url],
+      };
+      return [...current.slice(0, MAX_FILES - 1), generatedReference];
+    });
+    setActiveTab('step-1');
+    onSeedReferenceConsumed?.();
+    // The seed is a one-shot handoff from the image workflow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedReference?.id]);
 
 
   useEffect(() => {
@@ -182,7 +211,7 @@ export default function Studio() {
     invalidateDownstream();
     setMedia((current) => {
       const item = current.find((row) => row.id === id);
-      if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      if (item?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(item.previewUrl);
       return current.filter((row) => row.id !== id);
     });
   }
@@ -281,8 +310,8 @@ export default function Studio() {
           </p>
         </div>
         <div className="hero-badge">
-          <strong>ShopAIKey</strong>
-          <span>Server-side API</span>
+          <strong>Mai Đức Minh&apos;web</strong>
+          <span>AI API</span>
         </div>
       </section>
 
@@ -357,7 +386,7 @@ export default function Studio() {
           <span className="step-number">1</span>
           <div>
             <h2>Miêu tả nội dung</h2>
-            <p>Nêu rõ chủ thể, hành động, bối cảnh, phong cách, camera và điều cần giữ nguyên.</p>
+            <p>Nêu rõ chủ thể, hành động, bối cảnh, phong cách, camera, giọng nói/thoại và điều cần giữ nguyên.</p>
           </div>
         </div>
 
@@ -381,7 +410,7 @@ export default function Studio() {
             invalidateDownstream();
             setDescription(event.target.value);
           }}
-          placeholder="Ví dụ: Tạo video kiến trúc photorealistic, giữ nguyên hình khối công trình và vật liệu, camera dolly chậm từ trái sang phải, ánh sáng chiều trong trẻo..."
+          placeholder="Ví dụ: Tạo video photorealistic, giữ nguyên nhân vật theo ảnh tham chiếu, camera dolly chậm, ánh sáng điện ảnh; nếu có thoại hãy nêu ngôn ngữ, chất giọng, cảm xúc và tốc độ nói..."
           rows={7}
         />
 
@@ -598,7 +627,7 @@ export default function Studio() {
             <span className="video-creating-spinner" aria-hidden="true" />
             <div>
               <strong>Đã ghi nhận yêu cầu tạo video</strong>
-              <p>Video đang được tạo trên ShopAIKey. Sau khi thấy thông báo này, task đã được lưu vào lịch sử và bạn có thể đóng tab. Khi mở lại Lịch sử, hệ thống sẽ tự đồng bộ trạng thái và video hoàn tất.</p>
+              <p>Video đang được tạo trên Mai Đức Minh&apos;web API. Sau khi thấy thông báo này, task đã được lưu vào lịch sử và bạn có thể đóng tab. Khi mở lại Lịch sử, hệ thống sẽ tự đồng bộ trạng thái và video hoàn tất.</p>
             </div>
           </div>
         ) : null}

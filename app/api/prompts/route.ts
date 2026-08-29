@@ -5,6 +5,9 @@ import type { PromptSuggestion, SourceMedia } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+const API_BRAND = "Mai Đức Minh'web API";
+const HUMAN_IDENTITY_CONSTRAINT = 'If any reference image contains a person, the person in the generated video must be the exact same person shown in the reference image(s). Preserve facial identity, facial structure, skin tone, hairstyle, age appearance, body proportions, distinctive features, clothing and accessories unless the user explicitly requests a change. Never replace, merge, reinterpret or beautify the person into a different identity.';
+
 function parseJsonObject(text: string) {
   const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
   try {
@@ -28,9 +31,10 @@ function normalizeSuggestions(value: unknown): PromptSuggestion[] {
     .slice(0, 3)
     .map((item, index) => {
       const row = item as Record<string, unknown>;
+      const rawPrompt = String(row.prompt || '').trim();
       return {
         title: String(row.title || `Gợi ý ${index + 1}`),
-        prompt: String(row.prompt || '').trim(),
+        prompt: rawPrompt ? `${rawPrompt}\n\nMANDATORY HUMAN IDENTITY CONSISTENCY: ${HUMAN_IDENTITY_CONSTRAINT}` : '',
         descriptionVi: String(row.description_vi || row.descriptionVi || row.why || '').trim(),
         why: String(row.why || '').trim(),
       };
@@ -88,11 +92,13 @@ export async function POST(request: Request) {
               'Return JSON only. Do not use markdown fences.',
               'Schema: {"suggestions":[{"title":"Vietnamese short title","prompt":"English production-ready video prompt","description_vi":"Detailed Vietnamese description of what the viewer will see","why":"Vietnamese concise rationale"}]}.',
               'Return exactly 3 suggestions.',
-              'For each suggestion, description_vi must be concrete Vietnamese, around 4-6 sentences. Explain the visible scene, subject/action, camera framing and movement, lighting/color/mood, and the important details that will be preserved. Write for a non-technical user so they can understand the expected video before selecting the prompt.',
+              'For each suggestion, description_vi must be concrete Vietnamese, around 4-6 sentences. Explain the visible scene, subject/action, camera framing and movement, lighting/color/mood, voice/dialogue when requested, and the important details that will be preserved. Write for a non-technical user so they can understand the expected video before selecting the prompt.',
               'Do not merely translate the English prompt word-for-word; summarize it naturally and specifically in Vietnamese.',
               'Each prompt should be self-contained and optimized for a single continuous 10-second clip sent to grok-video-3-10s.',
               'Include subject, action, environment, camera/lens/movement, composition, lighting, material/texture fidelity, motion behavior, mood, continuity constraints, and pacing that can realistically fit within 10 seconds when relevant.',
               'When reference images are supplied, preserve identity, architecture, proportions, layout, materials, logos/text already present, and other defining details unless the user asks to change them.',
+              HUMAN_IDENTITY_CONSTRAINT,
+              'If the user requests dialogue or voice, specify spoken language, accent/region when relevant, voice age/gender characteristics when requested, pace, emotion, clarity, and natural lip-sync. Do not invent dialogue or voice when the user did not request it.',
               'Do not invent extra text, watermarks, logos, people, buildings, or objects unless the user requests them.',
               'Make the 3 options meaningfully different: cinematic realism, dynamic camera/storytelling, and controlled premium/product/architectural style when applicable.',
             ].join(' '),
@@ -107,7 +113,7 @@ export async function POST(request: Request) {
     const raw = await response.text();
     if (!response.ok) {
       console.error('ShopAIKey GPT error', response.status, raw);
-      return Response.json({ error: `ShopAIKey GPT error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
+      return Response.json({ error: `${API_BRAND} · lỗi GPT (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
     }
 
     const data = JSON.parse(raw);

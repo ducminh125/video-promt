@@ -7,6 +7,8 @@ export const maxDuration = 60;
 
 const FIXED_VIDEO_DURATION = 10;
 const VIDEO_MODEL = 'grok-video-3-10s';
+const API_BRAND = "Mai Đức Minh'web API";
+const HUMAN_IDENTITY_CONSTRAINT = 'MANDATORY HUMAN IDENTITY CONSISTENCY: If any reference image contains a person, the person in the generated video must be the exact same person shown in the reference image(s). Preserve facial identity, facial structure, skin tone, hairstyle, age appearance, body proportions, distinctive features, clothing and accessories unless the approved Vietnamese direction explicitly requests a change. Never substitute, merge, reinterpret or beautify the person into a different identity.';
 
 function asNonEmptyString(value: unknown) {
   if (typeof value === 'string' && value.trim()) return value.trim();
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
       prompt
         ? `\nORIGINAL PRODUCTION PROMPT (use only for technical detail; ignore anything that conflicts with the Vietnamese direction):\n${prompt}`
         : '',
+      referenceImages.length ? `\n${HUMAN_IDENTITY_CONSTRAINT}` : '',
       '\nCreate one continuous, coherent 10-second video. Preserve reference-image identity, layout, materials, logos/text and defining details unless the Vietnamese direction explicitly asks to change them.',
     ].filter(Boolean).join('\n');
 
@@ -96,7 +99,7 @@ export async function POST(request: Request) {
     const raw = await response.text();
     if (!response.ok) {
       console.error('ShopAIKey video error', response.status, raw);
-      return Response.json({ error: `ShopAIKey video error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
+      return Response.json({ error: `${API_BRAND} · lỗi tạo video (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
     }
 
     let data: any;
@@ -104,7 +107,7 @@ export async function POST(request: Request) {
       data = raw ? JSON.parse(raw) : {};
     } catch {
       console.error('ShopAIKey returned non-JSON video response', raw);
-      return Response.json({ error: `ShopAIKey trả về dữ liệu không hợp lệ: ${raw.slice(0, 300)}` }, { status: 502 });
+      return Response.json({ error: `${API_BRAND} trả về dữ liệu không hợp lệ: ${raw.slice(0, 300)}` }, { status: 502 });
     }
 
     const embeddedError =
@@ -113,7 +116,7 @@ export async function POST(request: Request) {
       (data?.code && String(data.code).toLowerCase() !== 'success' ? asNonEmptyString(data?.message) : '');
     if (embeddedError) {
       console.error('ShopAIKey video embedded error', data);
-      return Response.json({ error: `ShopAIKey: ${embeddedError}` }, { status: 502 });
+      return Response.json({ error: `${API_BRAND}: ${embeddedError}` }, { status: 502 });
     }
 
     const taskId = getTaskId(data);
@@ -125,7 +128,7 @@ export async function POST(request: Request) {
         : [];
       return Response.json(
         {
-          error: `ShopAIKey đã nhận request nhưng không trả về mã task. code=${asNonEmptyString(data?.code) || 'n/a'}, message=${asNonEmptyString(data?.message) || 'n/a'}.`,
+          error: `${API_BRAND} đã nhận request nhưng không trả về mã task. code=${asNonEmptyString(data?.code) || 'n/a'}, message=${asNonEmptyString(data?.message) || 'n/a'}.`,
           responseShape: { rootKeys, dataKeys },
         },
         { status: 502 },

@@ -3,8 +3,8 @@ import './globals.css';
 import Nav from '@/components/Nav';
 
 export const metadata: Metadata = {
-  title: 'Video Prompt Studio',
-  description: 'GPT-5.4 prompt suggestions and fixed 10-second Grok Video 3 generation via ShopAIKey.',
+  title: "Mai Đức Minh'web AI Studio",
+  description: "AI image and video workflow powered through Mai Đức Minh'web API.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

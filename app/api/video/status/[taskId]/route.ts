@@ -4,6 +4,8 @@ import { shopAIKeyFetch } from '@/lib/shopaikey';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+const API_BRAND = "Mai Đức Minh'web API";
+
 function text(value: unknown) {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
@@ -30,14 +32,14 @@ export async function GET(
 
     const raw = await response.text();
     if (!response.ok) {
-      return Response.json({ error: `ShopAIKey status error (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
+      return Response.json({ error: `${API_BRAND} · lỗi trạng thái (${response.status}): ${raw.slice(0, 500)}` }, { status: 502 });
     }
 
     let data: any;
     try {
       data = raw ? JSON.parse(raw) : {};
     } catch {
-      return Response.json({ error: 'ShopAIKey status response is not valid JSON' }, { status: 502 });
+      return Response.json({ error: `${API_BRAND} trả về trạng thái không hợp lệ.` }, { status: 502 });
     }
 
     const taskSource = data?.data ?? data ?? {};

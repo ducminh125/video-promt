@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
   return new NextResponse('Authentication required', {
     status: 401,
     headers: {
-      'WWW-Authenticate': 'Basic realm="Video Prompt Studio", charset="UTF-8"',
+      'WWW-Authenticate': 'Basic realm="Mai Duc Minh web AI Studio", charset="UTF-8"',
       'Cache-Control': 'no-store',
     },
   });
