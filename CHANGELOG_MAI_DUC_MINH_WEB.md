@@ -36,3 +36,18 @@ Sau khi ảnh tạo xong có nút **Dùng ảnh này làm ảnh minh họa tạo
 - chuyển sang thẻ Tạo video;
 - tự thêm ảnh kết quả vào danh sách ảnh tham chiếu ở Bước 1;
 - xóa prompt/video downstream cũ nếu có để tránh prompt cũ không còn khớp ảnh mới.
+
+## 2026-09-03 - Prompt limit, structured options, direct download
+- Initial fix capped video prompts below the upstream 4096 limit. This behavior is superseded by the GPT-5.4 lossless prompt compiler described below; the current code no longer blindly truncates prompt text.
+- Camera, character, environment, lighting, voice/dialogue and video-style helpers are now dropdown selections. Selections are combined with the user's description only when sending to the prompt API and no longer dump boilerplate into the textarea.
+- History downloads now use a same-origin `/api/video/download?id=...` proxy with `Content-Disposition: attachment`, so the Download button saves the file instead of opening the remote video page.
+
+
+## 2026-09-03 - GPT-5.4 lossless prompt compiler before video generation
+- `/api/video/generate` no longer cuts long prompt text to fit the 4096 limit.
+- Before calling `grok-video-3-10s`, the backend sends the full approved Vietnamese description plus the selected technical prompt to `gpt-5.4`.
+- Pass 1 semantically compacts the request by merging repetition and using concise production terminology while preserving every unique visible/audible requirement.
+- Pass 2 always audits the compiled candidate against both original source blocks, repairs omissions/ambiguity, and outputs the final compact prompt.
+- The final prompt must pass both a character limit and UTF-8 byte limit. If GPT-5.4 reports missing details or still exceeds the safe limit, video generation stops instead of silently deleting content.
+- Exact dialogue, proper nouns, numbers, visible text/logos, identity constraints, camera, action, lighting, materials, timing and negative constraints are explicitly marked as lossless requirements.
+- Added optional server variable `PROMPT_OPTIMIZER_MODEL` (default `gpt-5.4`).

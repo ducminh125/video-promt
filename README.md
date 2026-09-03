@@ -58,6 +58,7 @@ Mở `http://localhost:3000`.
 ```env
 SHOPAIKEY_API_KEY=sk-your-shopaikey-key
 SHOPAIKEY_BASE_URL=https://api.shopaikey.com
+PROMPT_OPTIMIZER_MODEL=gpt-5.4
 DATABASE_URL=postgresql://...
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 APP_USER=admin
@@ -190,3 +191,8 @@ middleware.ts
 - Lưu bản copy video hoàn thành về object storage để archive dài hạn.
 - Webhook/background worker để cập nhật trạng thái dù người dùng đóng trang.
 - Nút regenerate prompt / duplicate project / favorite prompt.
+
+
+### Long video prompt handling
+
+When the user clicks video generation, the server first compiles the complete approved description with GPT-5.4, then runs a second GPT-5.4 verification/repair pass against the original source text. Only a verified prompt under the Grok Video prompt limit is submitted. The server does not blindly truncate user requirements.

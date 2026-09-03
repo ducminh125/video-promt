@@ -137,8 +137,8 @@ export default function HistoryClient() {
                   <a className="secondary-button link-button" href={item.video_url} target="_blank" rel="noreferrer">
                     Mở video gốc
                   </a>
-                  <a className="primary-button link-button" href={item.video_url} download>
-                    Tải video
+                  <a className="primary-button link-button" href={`/api/video/download?id=${encodeURIComponent(item.id)}`}>
+                    Tải video về máy
                   </a>
                 </div>
               ) : item.task_id ? (
