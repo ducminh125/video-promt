@@ -37,7 +37,7 @@ export default function HomeStudio() {
             <span className="creator-mode-icon">🎬</span>
             <span>
               <strong>Tạo video AI</strong>
-              <small>4 bước · GPT-5.4 → Grok Video 3 · 10s</small>
+              <small>4 bước · GPT-5.4 → Grok Video 3 10s</small>
             </span>
           </button>
           <button

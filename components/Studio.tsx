@@ -377,7 +377,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="eyebrow">AI VIDEO WORKFLOW</span>
           <h1>Từ ý tưởng đến video trong 4 bước</h1>
           <p>
-            Miêu tả nội dung, thêm ảnh hoặc video tham chiếu, nhận 3 phương án từ GPT-5.4 rồi tạo video 10 giây bằng Grok Video 3.
+            Miêu tả nội dung, thêm ảnh hoặc video tham chiếu, nhận 3 phương án từ GPT-5.4 rồi tạo video 10 giây bằng Grok Video 3 10s.
           </p>
         </div>
         <div className="hero-badge">
@@ -538,7 +538,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         ) : null}
 
         <div className="actions-row">
-          <span className="muted">{referenceImages.length} ảnh/frame sẽ được gửi cho GPT-5.4 và Grok Video 3 (10s).</span>
+          <span className="muted">{referenceImages.length} ảnh/frame sẽ được gửi cho GPT-5.4 và Grok Video 3 10s.</span>
           <button
             className="primary-button"
             onClick={generatePrompts}
@@ -617,7 +617,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">3</span>
           <div>
             <h2>Điều chỉnh prompt & kiểm tra giới hạn ký tự</h2>
-            <p>Mô tả của bạn được giữ nguyên. Hệ thống chỉ bổ sung tự động khóa nhận diện ảnh tham chiếu và yêu cầu đầu ra trước khi gửi Grok Video 3. Bộ đếm dưới đây tính theo prompt thực tế sau khi bổ sung; giới hạn tối đa 4.096.</p>
+            <p>Mô tả của bạn được giữ nguyên. Hệ thống chỉ bổ sung tự động khóa nhận diện ảnh tham chiếu và yêu cầu đầu ra trước khi gửi Grok Video 3 10s. Bộ đếm dưới đây tính theo prompt thực tế sau khi bổ sung; giới hạn tối đa 4.096.</p>
           </div>
         </div>
 
@@ -697,8 +697,8 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         <div className="step-head">
           <span className="step-number">4</span>
           <div>
-            <h2>Tạo video bằng Grok Video 3 · 10s</h2>
-            <p>Prompt đã được kiểm tra ở Bước 3. Bước 4 không dùng GPT-5.4; hệ thống gửi mô tả đã xác nhận + khóa giữ nguyên nhận diện + đúng metadata tỷ lệ/độ phân giải tới Grok Video 3.</p>
+            <h2>Tạo video bằng Grok Video 3 10s</h2>
+            <p>Prompt đã được kiểm tra ở Bước 3. Bước 4 không dùng GPT-5.4; hệ thống gửi mô tả đã xác nhận + khóa giữ nguyên nhận diện + đúng metadata tỷ lệ/độ phân giải tới Grok Video 3 10s.</p>
           </div>
         </div>
 

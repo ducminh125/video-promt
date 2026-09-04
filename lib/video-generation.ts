@@ -1,4 +1,5 @@
-export const VIDEO_MODEL = 'grok-video-3';
+export const VIDEO_MODEL = 'grok-video-3-10s';
+export const VIDEO_PROMPT_PREFIX = 'nhân vật phải giống khuôn mặt';
 export const FIXED_VIDEO_DURATION = 10;
 export const MAX_VIDEO_PROMPT_CHARS = 4096;
 export const PROMPT_WARNING_CHARS = 3600;
@@ -33,10 +34,10 @@ export function buildFinalVideoPrompt(input: {
 }) {
   const ratio = normalizeVideoRatio(input.ratio);
   const resolution = normalizeVideoResolution(input.resolution);
-  const sections: string[] = [];
+  const sections: string[] = [VIDEO_PROMPT_PREFIX];
 
   if (input.hasReferenceImages) {
-    // Put the identity lock first so it is treated as a primary generation constraint.
+    // Keep the required Vietnamese prefix first, then apply the identity lock as the next highest-priority constraint.
     sections.push(REFERENCE_IDENTITY_LOCK);
   }
 

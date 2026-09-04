@@ -24,7 +24,7 @@ async function ensureSchema() {
           source_media JSONB NOT NULL DEFAULT '[]'::jsonb,
           reference_images JSONB NOT NULL DEFAULT '[]'::jsonb,
           model_text TEXT NOT NULL DEFAULT 'gpt-5.4',
-          model_video TEXT NOT NULL DEFAULT 'grok-video-3',
+          model_video TEXT NOT NULL DEFAULT 'grok-video-3-10s',
           task_id TEXT,
           status TEXT NOT NULL DEFAULT 'PROMPTS_READY',
           progress TEXT,
@@ -35,9 +35,22 @@ async function ensureSchema() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
-      await sql`ALTER TABLE video_history ALTER COLUMN model_video SET DEFAULT 'grok-video-3'`;
+      await sql`ALTER TABLE video_history ALTER COLUMN model_video SET DEFAULT 'grok-video-3-10s'`;
       await sql`CREATE INDEX IF NOT EXISTS video_history_created_at_idx ON video_history (created_at DESC)`;
       await sql`CREATE INDEX IF NOT EXISTS video_history_task_id_idx ON video_history (task_id)`;
+      await sql`
+        CREATE TABLE IF NOT EXISTS image_history (
+          id TEXT PRIMARY KEY,
+          description TEXT NOT NULL,
+          production_prompt TEXT,
+          reference_images JSONB NOT NULL DEFAULT '[]'::jsonb,
+          image_url TEXT NOT NULL,
+          ratio TEXT NOT NULL DEFAULT '16:9',
+          model_image TEXT NOT NULL DEFAULT 'gpt-image-2-all',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS image_history_created_at_idx ON image_history (created_at DESC)`;
     })().catch((error) => {
       schemaPromise = null;
       throw error;
@@ -87,7 +100,7 @@ export async function attachVideoTask(input: {
         status = 'queued',
         progress = '0%',
         settings = ${JSON.stringify(input.settings)}::jsonb,
-        model_video = ${input.modelVideo || 'grok-video-3'},
+        model_video = ${input.modelVideo || 'grok-video-3-10s'},
         fail_reason = NULL,
         updated_at = NOW()
     WHERE id = ${input.historyId}
@@ -144,5 +157,49 @@ export async function getHistoryVideo(id: string) {
     LIMIT 1
   `;
   return rows[0] || null;
+}
+
+export async function createImageHistory(input: {
+  id: string;
+  description: string;
+  productionPrompt?: string;
+  referenceImages: string[];
+  imageUrl: string;
+  ratio: string;
+  modelImage?: string;
+}) {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`
+    INSERT INTO image_history (
+      id, description, production_prompt, reference_images, image_url, ratio, model_image
+    ) VALUES (
+      ${input.id},
+      ${input.description},
+      ${input.productionPrompt || null},
+      ${JSON.stringify(input.referenceImages)}::jsonb,
+      ${input.imageUrl},
+      ${input.ratio},
+      ${input.modelImage || 'gpt-image-2-all'}
+    )
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function listImageHistory(limit = 100) {
+  await ensureSchema();
+  const sql = getSql();
+  return sql`
+    SELECT * FROM image_history
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+}
+
+export async function deleteImageHistory(id: string) {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`DELETE FROM image_history WHERE id = ${id}`;
 }
 

@@ -8,8 +8,8 @@ export default function HistoryPage() {
       <section className="hero-panel history-hero">
         <div>
           <span className="eyebrow">LIBRARY</span>
-          <h1>Lịch sử video</h1>
-          <p>Chỉ prompt bạn đã chọn để tạo video, trạng thái tác vụ và video hoàn thành được lưu và hiển thị tại đây.</p>
+          <h1>Lịch sử ảnh & video</h1>
+          <p>Video đã gửi và hình ảnh tạo thành công được lưu riêng theo từng tab để bạn dễ xem lại prompt, tham chiếu và kết quả.</p>
         </div>
       </section>
       <HistoryClient />

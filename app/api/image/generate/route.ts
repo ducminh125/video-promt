@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob';
+import { createImageHistory } from '@/lib/db';
 import { shopAIKeyFetch } from '@/lib/shopaikey';
 
 export const runtime = 'nodejs';
@@ -158,7 +159,26 @@ export async function POST(request: Request) {
           return persistImageFromBuffer(decoded.buffer, decoded.contentType);
         })();
 
-    return Response.json({ imageUrl, model: IMAGE_MODEL });
+    const historyId = crypto.randomUUID();
+    let historySaved = false;
+    let historyWarning = '';
+    try {
+      await createImageHistory({
+        id: historyId,
+        description: descriptionVi,
+        productionPrompt: prompt,
+        referenceImages,
+        imageUrl,
+        ratio: RATIO_PREFIX[ratio] ? ratio : '16:9',
+        modelImage: IMAGE_MODEL,
+      });
+      historySaved = true;
+    } catch (historyError) {
+      console.error('Could not save generated image history', historyError);
+      historyWarning = 'Không lưu được lịch sử ảnh. Hãy kiểm tra kết nối DATABASE_URL của ứng dụng.';
+    }
+
+    return Response.json({ imageUrl, model: IMAGE_MODEL, historyId, historySaved, historyWarning });
   } catch (error) {
     console.error('image generation error', error);
     return Response.json({ error: error instanceof Error ? error.message : 'Image generation failed' }, { status: 500 });

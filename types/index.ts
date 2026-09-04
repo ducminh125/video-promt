@@ -37,3 +37,15 @@ export type HistoryItem = {
   created_at: string;
   updated_at: string;
 };
+
+
+export type ImageHistoryItem = {
+  id: string;
+  description: string;
+  production_prompt: string | null;
+  reference_images: string[];
+  image_url: string;
+  ratio: string;
+  model_image: string;
+  created_at: string;
+};

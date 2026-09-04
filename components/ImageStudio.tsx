@@ -38,6 +38,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
   const [imageLoading, setImageLoading] = useState(false);
   const [imageWaitSeconds, setImageWaitSeconds] = useState(0);
   const [imageUrl, setImageUrl] = useState('');
+  const [historyNotice, setHistoryNotice] = useState('');
   const [ratio, setRatio] = useState('16:9');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,28 +48,66 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
     [media],
   );
 
-  const imageHints = [
+  const imageEnhancements: Array<{ id: string; label: string; options: Array<[string, string, string]> }> = [
     {
+      id: 'character',
       label: '👤 Nhân vật',
-      text: ' Nhân vật: mô tả rõ khuôn mặt, tóc, trang phục, dáng người, biểu cảm; nếu có ảnh tham chiếu thì phải giữ đúng nhận diện và đặc điểm của người trong ảnh.'
+      options: [
+        ['preserve', 'Giữ đúng nhân vật tham chiếu', 'Nhân vật: nếu có ảnh tham chiếu, phải giữ đúng khuôn mặt, nhận diện, tóc, tuổi, vóc dáng, trang phục và các đặc điểm nhận biết của người trong ảnh.'],
+        ['natural', 'Tự nhiên, chân thực', 'Nhân vật: khuôn mặt và cơ thể chân thực, biểu cảm tự nhiên, tỷ lệ giải phẫu hợp lý, da và tóc có texture thật.'],
+        ['cinematic', 'Điện ảnh', 'Nhân vật: phong cách cinematic realism, biểu cảm tinh tế, tạo dáng có chủ đích nhưng vẫn tự nhiên.'],
+        ['commercial', 'Quảng cáo cao cấp', 'Nhân vật: chỉn chu như ảnh quảng cáo cao cấp, biểu cảm tự tin, sạch và chuyên nghiệp.'],
+      ],
     },
     {
+      id: 'composition',
       label: '🖼️ Bố cục',
-      text: ' Bố cục: xác định vị trí chủ thể, góc nhìn, tiền cảnh - trung cảnh - hậu cảnh, khoảng trống và điểm nhấn thị giác.'
+      options: [
+        ['centered', 'Chủ thể trung tâm', 'Bố cục: chủ thể chính ở trung tâm, phân cấp thị giác rõ, khoảng trống cân đối và dễ nhìn.'],
+        ['thirds', 'Quy tắc 1/3', 'Bố cục: áp dụng rule of thirds, điểm nhìn tự nhiên, có tiền cảnh - trung cảnh - hậu cảnh rõ ràng.'],
+        ['closeup', 'Cận cảnh', 'Bố cục: close-up hoặc medium close-up, tập trung mạnh vào khuôn mặt/chủ thể và chi tiết quan trọng.'],
+        ['wide', 'Toàn cảnh có chiều sâu', 'Bố cục: góc rộng, thể hiện đầy đủ bối cảnh, chiều sâu không gian và mối quan hệ giữa chủ thể với môi trường.'],
+      ],
     },
     {
+      id: 'lighting',
       label: '💡 Ánh sáng & màu',
-      text: ' Ánh sáng và màu sắc: mô tả nguồn sáng, thời điểm, độ tương phản, bảng màu, mood và chất liệu ánh sáng.'
+      options: [
+        ['soft-studio', 'Studio mềm', 'Ánh sáng và màu sắc: soft studio lighting, bóng đổ mềm, màu da/vật liệu trung thực, tương phản vừa phải.'],
+        ['daylight', 'Ánh sáng tự nhiên', 'Ánh sáng và màu sắc: natural daylight, màu trung thực, highlight tự nhiên, không ám màu quá mức.'],
+        ['cinematic', 'Cinematic tương phản', 'Ánh sáng và màu sắc: cinematic lighting, tương phản có kiểm soát, chiều sâu rõ và bảng màu hài hòa.'],
+        ['warm', 'Ấm áp', 'Ánh sáng và màu sắc: tông ấm, ánh vàng nhẹ, mood dễ chịu, highlight mềm và giàu cảm xúc.'],
+      ],
     },
     {
+      id: 'detail',
       label: '🔎 Chất liệu & chi tiết',
-      text: ' Chất liệu và chi tiết: ưu tiên texture chân thực, vật liệu đúng thực tế, chi tiết sắc nét, không tự ý thêm chữ/logo nếu không được yêu cầu.'
+      options: [
+        ['real-texture', 'Texture chân thực', 'Chất liệu và chi tiết: texture chân thực, vật liệu đúng thực tế, bề mặt và chi tiết nhỏ sắc nét.'],
+        ['clean', 'Sạch, tối giản', 'Chất liệu và chi tiết: hình ảnh sạch, loại bỏ chi tiết gây nhiễu, không tự ý thêm chữ/logo/vật thể ngoài yêu cầu.'],
+        ['product', 'Chi tiết sản phẩm cao', 'Chất liệu và chi tiết: ưu tiên độ chính xác hình khối, màu sắc, vật liệu, logo/chữ có sẵn và các đặc điểm nhận diện sản phẩm.'],
+      ],
     },
     {
+      id: 'style',
       label: '🎨 Phong cách ảnh',
-      text: ' Phong cách ảnh: photorealistic, cinematic, editorial, premium commercial photography, high detail, natural depth.'
+      options: [
+        ['photorealistic', 'Photorealistic', 'Phong cách ảnh: photorealistic, high detail, natural depth, realistic optics and materials.'],
+        ['cinematic', 'Cinematic', 'Phong cách ảnh: cinematic still photography, realistic, giàu chiều sâu, bố cục và ánh sáng như khung hình phim.'],
+        ['editorial', 'Editorial', 'Phong cách ảnh: editorial photography hiện đại, tinh tế, có cá tính nhưng vẫn tự nhiên và chân thực.'],
+        ['premium', 'Premium commercial', 'Phong cách ảnh: premium commercial photography, sạch, sang trọng, chi tiết sản phẩm/chủ thể rõ và có tính quảng cáo cao.'],
+      ],
     },
   ];
+
+  const [enhancementSelections, setEnhancementSelections] = useState<Record<string, string>>({});
+
+  const selectedImageDetails = imageEnhancements.flatMap((group) => {
+    const selectedValue = enhancementSelections[group.id];
+    const option = group.options.find(([value]) => value === selectedValue);
+    return option ? [option[2]] : [];
+  });
+  const combinedDescription = [description.trim(), ...selectedImageDetails].filter(Boolean).join('\n');
 
   function invalidateDownstream() {
     setSuggestions([]);
@@ -77,11 +116,12 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
     setEditedDescriptionVi('');
     setPromptConfirmed(false);
     setImageUrl('');
+    setHistoryNotice('');
   }
 
-  function addImageHint(text: string) {
+  function setEnhancement(groupId: string, value: string) {
     invalidateDownstream();
-    setDescription((current) => `${current}${current.trim() ? '\n' : ''}${text}`.trim());
+    setEnhancementSelections((current) => ({ ...current, [groupId]: value }));
   }
 
   useEffect(() => {
@@ -163,7 +203,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
       const response = await fetch('/api/image/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description, referenceImages }),
+        body: JSON.stringify({ description: combinedDescription, referenceImages }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không tạo được prompt ảnh');
@@ -205,6 +245,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
     setError('');
     setImageLoading(true);
     setImageUrl('');
+    setHistoryNotice('');
     try {
       const response = await fetch('/api/image/generate', {
         method: 'POST',
@@ -220,6 +261,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
       if (!response.ok) throw new Error(data.error || 'Không tạo được ảnh');
       setImageUrl(String(data.imageUrl || ''));
       if (!data.imageUrl) throw new Error('API không trả về URL ảnh hợp lệ.');
+      setHistoryNotice(data.historySaved ? 'Ảnh đã được lưu vào Lịch sử.' : (data.historyWarning ? `Ảnh đã tạo thành công nhưng chưa lưu được lịch sử: ${data.historyWarning}` : '')); 
     } catch (imageError) {
       setError(imageError instanceof Error ? imageError.message : 'Không tạo được ảnh');
     } finally {
@@ -275,12 +317,24 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
             </div>
           </div>
 
-          <div className="hint-buttons">
-            {imageHints.map((hint) => (
-              <button key={hint.label} type="button" className="secondary-button" onClick={() => addImageHint(hint.text)}>
-                {hint.label}
-              </button>
-            ))}
+          <div className="enhancement-panel">
+            <div className="enhancement-panel-head">
+              <strong>Tùy chọn gợi ý</strong>
+              <span>Chọn trực tiếp cho từng nhóm. Các lựa chọn sẽ được ghép cùng mô tả khi tạo 3 prompt ảnh, không chèn chữ vào ô mô tả.</span>
+            </div>
+            <div className="enhancement-grid">
+              {imageEnhancements.map((group) => (
+                <label className="enhancement-field" key={group.id}>
+                  <span>{group.label}</span>
+                  <select value={enhancementSelections[group.id] || ''} onChange={(event) => setEnhancement(group.id, event.target.value)}>
+                    <option value="">Không chọn</option>
+                    {group.options.map(([value, label]) => (
+                      <option value={value} key={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
           </div>
 
           <textarea
@@ -293,6 +347,13 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
             placeholder="Ví dụ: Tạo ảnh quảng cáo photorealistic, nhân vật giữ đúng khuôn mặt theo ảnh tham chiếu, ánh sáng studio mềm, bố cục premium, không thêm chữ ngoài yêu cầu..."
             rows={7}
           />
+
+          {Object.values(enhancementSelections).some(Boolean) ? (
+            <details className="combined-description-preview">
+              <summary>Xem nội dung đầy đủ sẽ gửi cho AI</summary>
+              <p>{combinedDescription}</p>
+            </details>
+          ) : null}
 
           <div className="upload-zone" onClick={() => inputRef.current?.click()}>
             <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(event) => addFiles(event.target.files)} />
@@ -316,7 +377,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
 
           <div className="actions-row">
             <span className="muted">{referenceImages.length} ảnh sẽ được dùng để GPT-5.4 phân tích và gpt-image-2-all tham chiếu.</span>
-            <button className="primary-button" onClick={generatePrompts} disabled={promptLoading || uploading || description.trim().length < 10}>
+            <button className="primary-button" onClick={generatePrompts} disabled={promptLoading || uploading || combinedDescription.trim().length < 10}>
               {promptLoading ? 'GPT-5.4 đang tạo 3 prompt…' : 'Tạo 3 gợi ý prompt ảnh'}
             </button>
           </div>
@@ -422,6 +483,7 @@ export default function ImageStudio({ onUseForVideo }: ImageStudioProps) {
                 <a className="secondary-button link-button" href={imageUrl} target="_blank" rel="noreferrer">Mở ảnh gốc</a>
                 <button className="primary-button" type="button" onClick={() => onUseForVideo(imageUrl)}>Dùng ảnh này làm ảnh minh họa tạo video</button>
               </div>
+              {historyNotice ? <div className="history-saved-note"><strong>Lịch sử ảnh</strong><span>{historyNotice}</span></div> : null}
             </div>
           ) : null}
         </section>
