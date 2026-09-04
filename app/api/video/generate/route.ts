@@ -7,6 +7,7 @@ export const maxDuration = 60;
 
 const FIXED_VIDEO_DURATION = 10;
 const VIDEO_MODEL = 'grok-video-3-10s';
+<<<<<<< Updated upstream
 const PROMPT_OPTIMIZER_MODEL = process.env.PROMPT_OPTIMIZER_MODEL || 'gpt-5.4';
 const API_BRAND = "Mai Đức Minh'web API";
 const HUMAN_IDENTITY_CONSTRAINT = 'REFERENCE IDENTITY: keep the exact same person from reference images. Preserve face, facial structure, skin tone, hairstyle, age appearance, body proportions, clothing, accessories and distinctive details unless the approved direction explicitly requests a change. Never substitute, merge, reinterpret or beautify the person into a different identity.';
@@ -23,6 +24,14 @@ type OptimizerPayload = {
   coverage_complete?: unknown;
   missing_details?: unknown;
 };
+=======
+const MAX_VIDEO_PROMPT_CHARS = 4096;
+const API_BRAND = "Mai Đức Minh'web API";
+
+function utf8Length(value: string) {
+  return Buffer.byteLength(value, 'utf8');
+}
+>>>>>>> Stashed changes
 
 function asNonEmptyString(value: unknown) {
   if (typeof value === 'string' && value.trim()) return value.trim();
@@ -217,8 +226,8 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const historyId = String(body.historyId || '');
-    const prompt = String(body.prompt || '').trim();
-    const descriptionVi = String(body.descriptionVi || '').trim();
+    // This is the exact user-approved Step 3 text. No GPT rewrite/optimization happens here.
+    const generationPrompt = String(body.descriptionVi || '').trim();
     const referenceImages: string[] = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
       .map((value: unknown) => String(value))
       .filter((url: string) => url.length > 0)
@@ -230,10 +239,11 @@ export async function POST(request: Request) {
       resolution: body.resolution === '720P' ? '720P' : '1080P',
     };
 
-    if (!historyId || !descriptionVi) {
-      return Response.json({ error: 'Missing historyId or Vietnamese description' }, { status: 400 });
+    if (!historyId || !generationPrompt) {
+      return Response.json({ error: 'Thiếu historyId hoặc prompt đã xác nhận ở Bước 3.' }, { status: 400 });
     }
 
+<<<<<<< Updated upstream
     // GPT-5.4 performs semantic/lossless prompt compilation. No blind truncation is used.
     const generationPrompt = await buildGenerationPrompt({
       descriptionVi,
@@ -241,6 +251,20 @@ export async function POST(request: Request) {
       hasReferenceImages: referenceImages.length > 0,
       settings,
     });
+=======
+    const promptBytes = utf8Length(generationPrompt);
+    if (generationPrompt.length > MAX_VIDEO_PROMPT_CHARS || promptBytes > MAX_VIDEO_PROMPT_CHARS) {
+      return Response.json(
+        {
+          error: `Prompt vượt giới hạn an toàn của API: ${generationPrompt.length.toLocaleString('vi-VN')} ký tự / ${promptBytes.toLocaleString('vi-VN')} byte UTF-8; tối đa ${MAX_VIDEO_PROMPT_CHARS.toLocaleString('vi-VN')}. Hãy quay lại Bước 3 và rút gọn nội dung.`,
+          promptChars: generationPrompt.length,
+          promptBytes,
+          maxPromptChars: MAX_VIDEO_PROMPT_CHARS,
+        },
+        { status: 400 },
+      );
+    }
+>>>>>>> Stashed changes
 
     const response = await shopAIKeyFetch('/v1/video/generations', {
       method: 'POST',
@@ -248,8 +272,6 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: VIDEO_MODEL,
         prompt: generationPrompt,
-        // grok-video-3-10s is treated as a fixed 10-second preset.
-        // Keep duration=10 in both supported ShopAIKey shapes for compatibility, but never accept a client override.
         duration: FIXED_VIDEO_DURATION,
         metadata: {
           ...(referenceImages.length ? { images: referenceImages } : {}),
@@ -299,15 +321,21 @@ export async function POST(request: Request) {
       );
     }
 
-    await attachVideoTask({ historyId, prompt: descriptionVi, taskId, settings, modelVideo: VIDEO_MODEL });
+    await attachVideoTask({ historyId, prompt: generationPrompt, taskId, settings, modelVideo: VIDEO_MODEL });
 
     return Response.json({
       taskId,
       status: getInitialStatus(data),
       historyId,
+<<<<<<< Updated upstream
       optimizerModel: PROMPT_OPTIMIZER_MODEL,
       promptChars: generationPrompt.length,
       promptBytes: utf8Length(generationPrompt),
+=======
+      promptChars: generationPrompt.length,
+      promptBytes,
+      maxPromptChars: MAX_VIDEO_PROMPT_CHARS,
+>>>>>>> Stashed changes
     });
   } catch (error) {
     console.error('video generation error', error);
