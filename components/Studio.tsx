@@ -14,6 +14,8 @@ type VideoState = {
 
 const MAX_FILES = 4;
 const DEFAULT_VIDEO_DURATION = 10;
+const MAX_VIDEO_PROMPT_CHARS = 4096;
+const PROMPT_WARNING_CHARS = 3600;
 
 type WorkflowTab = 'step-1' | 'step-2' | 'step-3' | 'step-4';
 
@@ -29,7 +31,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   const [uploadMessage, setUploadMessage] = useState('');
   const [suggestions, setSuggestions] = useState<PromptSuggestion[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [editedPrompt, setEditedPrompt] = useState('');
   const [editedDescriptionVi, setEditedDescriptionVi] = useState('');
   const [historyId, setHistoryId] = useState('');
   const [promptLoading, setPromptLoading] = useState(false);
@@ -114,6 +115,18 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     return [description.trim(), ...selectedDetails].filter(Boolean).join('\n');
   }, [description, enhancementSelections]);
 
+<<<<<<< Updated upstream
+=======
+  const videoPrompt = editedDescriptionVi.trim();
+  const videoPromptCharCount = videoPrompt.length;
+  const videoPromptByteCount = new TextEncoder().encode(videoPrompt).length;
+  const videoPromptCharsRemaining = MAX_VIDEO_PROMPT_CHARS - videoPromptCharCount;
+  const videoPromptBytesRemaining = MAX_VIDEO_PROMPT_CHARS - videoPromptByteCount;
+  const videoPromptLimitUsage = Math.max(videoPromptCharCount, videoPromptByteCount);
+  const videoPromptTooLong = videoPromptCharCount > MAX_VIDEO_PROMPT_CHARS || videoPromptByteCount > MAX_VIDEO_PROMPT_CHARS;
+  const videoPromptNearLimit = !videoPromptTooLong && videoPromptLimitUsage >= PROMPT_WARNING_CHARS;
+
+>>>>>>> Stashed changes
   function setEnhancement(groupId: string, value: string) {
     invalidateDownstream();
     setEnhancementSelections((current) => ({ ...current, [groupId]: value }));
@@ -123,7 +136,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     if (!suggestions.length && !historyId && !videoState) return;
     setSuggestions([]);
     setSelectedIndex(null);
-    setEditedPrompt('');
     setEditedDescriptionVi('');
     setHistoryId('');
     setVideoState(null);
@@ -264,7 +276,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     setPromptLoading(true);
     setSuggestions([]);
     setSelectedIndex(null);
-    setEditedPrompt('');
     setEditedDescriptionVi('');
     setVideoState(null);
     setPromptConfirmed(false);
@@ -292,7 +303,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
 
   function choosePrompt(index: number) {
     setSelectedIndex(index);
-    setEditedPrompt(suggestions[index].prompt);
     setEditedDescriptionVi(suggestions[index].descriptionVi || suggestions[index].why || '');
     setPromptConfirmed(false);
     setError('');
@@ -300,8 +310,12 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   }
 
   function confirmPrompt() {
-    if (selectedIndex === null || !editedDescriptionVi.trim()) {
+    if (selectedIndex === null || !videoPrompt) {
       setError('Hãy chọn và điều chỉnh mô tả tiếng Việt trước khi xác nhận.');
+      return;
+    }
+    if (videoPromptTooLong) {
+      setError(`Prompt đang vượt giới hạn an toàn của API (${videoPromptCharCount.toLocaleString('vi-VN')} ký tự / ${videoPromptByteCount.toLocaleString('vi-VN')} byte UTF-8). Hãy rút gọn trước khi sang Bước 4.`);
       return;
     }
     setError('');
@@ -310,8 +324,13 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   }
 
   async function generateVideo() {
-    if (!editedDescriptionVi.trim() || !historyId || !promptConfirmed) {
+    if (!videoPrompt || !historyId || !promptConfirmed) {
       setError('Hãy xác nhận mô tả tiếng Việt ở Bước 3 trước khi tạo video.');
+      return;
+    }
+    if (videoPromptTooLong) {
+      setError(`Prompt vượt giới hạn an toàn của API. Hãy quay lại Bước 3 và rút gọn nội dung.`);
+      setActiveTab('step-3');
       return;
     }
     setError('');
@@ -323,8 +342,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           historyId,
-          prompt: editedPrompt,
-          descriptionVi: editedDescriptionVi,
+          descriptionVi: videoPrompt,
           referenceImages,
           duration,
           ratio,
@@ -567,7 +585,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
                   <p>{item.descriptionVi || item.why}</p>
                 </div>
                 <details className="prompt-english-details">
-                  <summary>Xem prompt tiếng Anh gửi cho AI</summary>
+                  <summary>Xem prompt kỹ thuật tiếng Anh tham khảo</summary>
                   <p className="prompt-body">{item.prompt}</p>
                 </details>
                 {item.why ? (
@@ -588,8 +606,8 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         <div className="step-head">
           <span className="step-number">3</span>
           <div>
-            <h2>Điều chỉnh mô tả bằng tiếng Việt</h2>
-            <p>Chỉnh trực tiếp nội dung bạn muốn nhìn thấy trong video bằng tiếng Việt. Mô tả đã xác nhận sẽ là chỉ dẫn ưu tiên khi Grok tạo video.</p>
+            <h2>Điều chỉnh prompt & kiểm tra giới hạn ký tự</h2>
+            <p>Nội dung trong ô dưới đây sẽ được gửi trực tiếp cho Grok Video 3, không qua GPT-5.4 ở Bước 4. Giới hạn tối đa là 4.096 ký tự.</p>
           </div>
         </div>
 
@@ -613,6 +631,36 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           disabled={selectedIndex === null}
         />
 
+        <div
+          className={`prompt-length-status ${videoPromptTooLong ? 'over-limit' : videoPromptNearLimit ? 'near-limit' : 'within-limit'}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="prompt-length-row">
+            <strong>{videoPromptCharCount.toLocaleString('vi-VN')} / {MAX_VIDEO_PROMPT_CHARS.toLocaleString('vi-VN')} ký tự</strong>
+            <span>
+              {videoPromptCharCount > MAX_VIDEO_PROMPT_CHARS
+                ? `Vượt ${Math.abs(videoPromptCharsRemaining).toLocaleString('vi-VN')} ký tự`
+                : `Còn ${videoPromptCharsRemaining.toLocaleString('vi-VN')} ký tự`}
+            </span>
+          </div>
+          <div className="prompt-length-secondary">
+            <span>Dung lượng UTF-8</span>
+            <strong>{videoPromptByteCount.toLocaleString('vi-VN')} / {MAX_VIDEO_PROMPT_CHARS.toLocaleString('vi-VN')} byte</strong>
+            <small>{videoPromptByteCount > MAX_VIDEO_PROMPT_CHARS ? `Vượt ${Math.abs(videoPromptBytesRemaining).toLocaleString('vi-VN')} byte` : `Còn ${videoPromptBytesRemaining.toLocaleString('vi-VN')} byte`}</small>
+          </div>
+          <div className="prompt-length-track" aria-hidden="true">
+            <span style={{ width: `${Math.min(100, (videoPromptLimitUsage / MAX_VIDEO_PROMPT_CHARS) * 100)}%` }} />
+          </div>
+          {videoPromptTooLong ? (
+            <p>⚠️ Prompt đã vượt giới hạn an toàn 4.096 ở số ký tự hoặc dung lượng UTF-8. Hệ thống sẽ không cho xác nhận hoặc tạo video cho đến khi bạn rút gọn nội dung.</p>
+          ) : videoPromptNearLimit ? (
+            <p>⚠️ Prompt đang gần giới hạn. Nên rút gọn một số câu để có khoảng an toàn trước khi tạo video.</p>
+          ) : (
+            <p>✓ Độ dài prompt hợp lệ. Nội dung này sẽ được gửi nguyên văn sang Grok Video 3.</p>
+          )}
+        </div>
+
         <div className="confirmation-actions">
           <button className="secondary-button" type="button" onClick={() => setActiveTab('step-2')}>
             Quay lại chọn prompt
@@ -621,7 +669,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
             className="primary-button"
             type="button"
             onClick={confirmPrompt}
-            disabled={selectedIndex === null || !editedDescriptionVi.trim()}
+            disabled={selectedIndex === null || !videoPrompt || videoPromptTooLong}
           >
             {promptConfirmed ? 'Đã xác nhận · Sang Bước 4' : 'Xác nhận mô tả · Sang Bước 4'}
           </button>
@@ -635,14 +683,18 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">4</span>
           <div>
             <h2>Tạo video bằng Grok Video 3 · 10s</h2>
+<<<<<<< Updated upstream
             <p>Trước khi tạo video, GPT-5.4 sẽ tự động hoàn thiện và cô đọng toàn bộ nội dung đã xác nhận thành prompt đúng giới hạn của Grok Video 3 mà không cắt mù thông tin.</p>
+=======
+            <p>Prompt đã được kiểm tra giới hạn ở Bước 3 và sẽ được gửi trực tiếp sang Grok Video 3, không qua bước GPT-5.4 xử lý lại.</p>
+>>>>>>> Stashed changes
           </div>
         </div>
 
         {promptConfirmed ? (
           <div className="step4-confirmed-prompt">
-            <span>Mô tả tiếng Việt đã xác nhận ở Bước 3</span>
-            <p>{editedDescriptionVi}</p>
+            <span>Prompt đã xác nhận ở Bước 3 · {videoPromptCharCount.toLocaleString('vi-VN')} / {MAX_VIDEO_PROMPT_CHARS.toLocaleString('vi-VN')} ký tự</span>
+            <p>{videoPrompt}</p>
           </div>
         ) : null}
 
@@ -674,9 +726,13 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         <button
           className="primary-button full-button"
           onClick={generateVideo}
-          disabled={videoLoading || !editedDescriptionVi.trim() || !historyId || !promptConfirmed}
+          disabled={videoLoading || !videoPrompt || videoPromptTooLong || !historyId || !promptConfirmed}
         >
+<<<<<<< Updated upstream
           {videoLoading ? 'GPT-5.4 đang hoàn thiện prompt…' : 'Hoàn thiện prompt & tạo video 10s'}
+=======
+          {videoLoading ? 'Đang gửi yêu cầu tạo video…' : 'Tạo video 10s'}
+>>>>>>> Stashed changes
         </button>
 
         {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
