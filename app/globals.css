@@ -486,3 +486,36 @@ summary { cursor: pointer; color: #c8bfff; font-weight: 700; }
 .combined-description-preview p { margin: 10px 0 0; white-space: pre-wrap; color: #cfd5de; font-size: 12px; line-height: 1.6; }
 @media (max-width: 980px) { .enhancement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .enhancement-grid { grid-template-columns: 1fr; } }
+<<<<<<< Updated upstream
+=======
+
+.prompt-length-status {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 15px;
+  background: #0c1016;
+  display: grid;
+  gap: 9px;
+}
+.prompt-length-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.prompt-length-row strong { font-size: 14px; }
+.prompt-length-row span { font-size: 12px; color: var(--muted); }
+.prompt-length-track { height: 7px; overflow: hidden; border-radius: 999px; background: #242b37; }
+.prompt-length-track span { display: block; height: 100%; border-radius: inherit; background: var(--accent-2); transition: width .2s ease; }
+.prompt-length-status p { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted); }
+.prompt-length-status.near-limit { border-color: rgba(255, 191, 71, .45); background: rgba(255, 191, 71, .06); }
+.prompt-length-status.near-limit .prompt-length-track span { background: #ffbf47; }
+.prompt-length-status.near-limit strong,
+.prompt-length-status.near-limit p { color: #ffd783; }
+.prompt-length-status.over-limit { border-color: rgba(255,107,117,.48); background: rgba(255,107,117,.08); }
+.prompt-length-status.over-limit .prompt-length-track span { background: var(--danger); }
+.prompt-length-status.over-limit strong,
+.prompt-length-status.over-limit p { color: #ffc3c7; }
+.prompt-length-secondary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
+.prompt-length-secondary > span { color: var(--muted); }
+.prompt-length-secondary > strong { font-size: 12px; }
+.prompt-length-secondary > small { margin-left: auto; color: var(--muted); }
+.prompt-length-status.near-limit .prompt-length-secondary > strong,
+.prompt-length-status.over-limit .prompt-length-secondary > strong { color: inherit; }
+>>>>>>> Stashed changes
