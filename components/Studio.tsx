@@ -44,36 +44,79 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   const [promptConfirmed, setPromptConfirmed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const promptHints = [
+  const promptEnhancements: Array<{ id: string; label: string; options: Array<[string, string, string]> }> = [
     {
+      id: 'camera',
       label: '🎥 Chuyển động camera',
-      text: ' Chuyển động camera: slow dolly in, pan nhẹ, tracking shot mượt, góc quay điện ảnh.'
+      options: [
+        ['slow-dolly', 'Slow dolly điện ảnh', 'Chuyển động camera: slow dolly in/out mượt, chuyển động ổn định, góc quay điện ảnh.'],
+        ['tracking', 'Tracking theo chủ thể', 'Chuyển động camera: tracking shot bám theo chủ thể, giữ chủ thể ổn định trong khung hình.'],
+        ['pan-tilt', 'Pan / tilt nhẹ', 'Chuyển động camera: pan hoặc tilt chậm, tự nhiên, không rung giật.'],
+        ['static', 'Máy quay tĩnh', 'Chuyển động camera: khung hình cố định, máy quay tĩnh, ưu tiên chuyển động của chủ thể.'],
+      ],
     },
     {
+      id: 'character',
       label: '🧍 Phong cách nhân vật',
-      text: ' Phong cách nhân vật: ngoại hình tự nhiên, biểu cảm rõ ràng, chuyển động chân thực, phong cách điện ảnh.'
+      options: [
+        ['natural', 'Tự nhiên, chân thực', 'Phong cách nhân vật: ngoại hình tự nhiên, biểu cảm rõ ràng, chuyển động chân thực.'],
+        ['cinematic', 'Điện ảnh', 'Phong cách nhân vật: cinematic realism, biểu cảm tinh tế, chuyển động có chủ đích như phim điện ảnh.'],
+        ['commercial', 'Quảng cáo cao cấp', 'Phong cách nhân vật: chỉn chu như TVC cao cấp, chuyển động sạch, biểu cảm tự tin và chuyên nghiệp.'],
+      ],
     },
     {
+      id: 'environment',
       label: '🌄 Khung cảnh xung quanh',
-      text: ' Khung cảnh: mô tả môi trường xung quanh, ánh sáng, thời tiết, chiều sâu không gian và các chi tiết nền.'
+      options: [
+        ['preserve', 'Giữ nguyên ảnh tham chiếu', 'Khung cảnh: giữ nguyên bố cục và các chi tiết quan trọng của ảnh tham chiếu, chỉ tạo chuyển động tự nhiên.'],
+        ['depth', 'Có chiều sâu điện ảnh', 'Khung cảnh: môi trường có chiều sâu không gian rõ, tiền cảnh/trung cảnh/hậu cảnh tự nhiên và giàu chi tiết.'],
+        ['clean', 'Tối giản, sạch', 'Khung cảnh: gọn gàng, ít chi tiết gây nhiễu, tập trung mạnh vào chủ thể chính.'],
+      ],
     },
     {
+      id: 'lighting',
       label: '💡 Ánh sáng & màu sắc',
-      text: ' Ánh sáng: cinematic lighting, màu sắc hài hòa, độ tương phản tự nhiên, chất lượng hình ảnh cao.'
+      options: [
+        ['cinematic', 'Cinematic', 'Ánh sáng & màu sắc: cinematic lighting, tương phản tự nhiên, màu hài hòa và giàu chiều sâu.'],
+        ['daylight', 'Ánh sáng tự nhiên', 'Ánh sáng & màu sắc: natural daylight, màu trung thực, da và vật liệu giữ texture tự nhiên.'],
+        ['warm', 'Ấm áp', 'Ánh sáng & màu sắc: ánh sáng vàng ấm, mood dễ chịu, highlight mềm và màu sắc hài hòa.'],
+        ['cool', 'Lạnh hiện đại', 'Ánh sáng & màu sắc: tông lạnh hiện đại, sạch, tương phản vừa phải, cảm giác công nghệ/cao cấp.'],
+      ],
     },
     {
+      id: 'voice',
       label: '🎙️ Giọng nói / thoại',
-      text: ' Giọng nói / thoại: nêu rõ ngôn ngữ, giọng vùng miền nếu cần, giới tính/độ tuổi/chất giọng, câu thoại chính xác (nếu có), tốc độ, cảm xúc, độ rõ lời và yêu cầu khớp khẩu hình tự nhiên.'
+      options: [
+        ['none', 'Không thêm thoại', 'Giọng nói / thoại: không tự tạo thêm câu thoại hoặc giọng nói nếu mô tả chính không yêu cầu.'],
+        ['vietnamese', 'Thoại tiếng Việt tự nhiên', 'Giọng nói / thoại: tiếng Việt tự nhiên, rõ lời, cảm xúc phù hợp và khớp khẩu hình. Giữ nguyên chính xác câu thoại nếu người dùng đã viết trong mô tả chính.'],
+        ['voiceover', 'Voice-over tiếng Việt', 'Giọng nói / thoại: voice-over tiếng Việt rõ ràng, nhịp nói tự nhiên, cảm xúc phù hợp; không bắt buộc khớp khẩu hình.'],
+      ],
     },
     {
+      id: 'video-style',
       label: '🎬 Phong cách video',
-      text: ' Phong cách video: cinematic, realistic, high detail, chuyển động tự nhiên, giống phim chuyên nghiệp.'
+      options: [
+        ['realistic', 'Chân thực', 'Phong cách video: photorealistic, high detail, chuyển động vật lý tự nhiên.'],
+        ['cinematic', 'Điện ảnh', 'Phong cách video: cinematic, realistic, high detail, nhịp chuyển động như phim chuyên nghiệp.'],
+        ['premium', 'Quảng cáo cao cấp', 'Phong cách video: premium commercial, hình ảnh sạch, sang trọng, chi tiết vật liệu rõ và chuyển động tinh tế.'],
+      ],
     },
   ];
 
-  function addPromptHint(text: string) {
+  const [enhancementSelections, setEnhancementSelections] = useState<Record<string, string>>({});
+
+  const combinedDescription = useMemo(() => {
+    const selectedDetails = promptEnhancements.flatMap((group) => {
+      const selectedValue = enhancementSelections[group.id];
+      const option = group.options.find(([value]) => value === selectedValue);
+      return option ? [option[2]] : [];
+    });
+    return [description.trim(), ...selectedDetails].filter(Boolean).join('\n');
+  }, [description, enhancementSelections]);
+
+  function setEnhancement(groupId: string, value: string) {
     invalidateDownstream();
-    setDescription((current) => `${current}${current.trim() ? '\\n' : ''}${text}`.trim());
+    setEnhancementSelections((current) => ({ ...current, [groupId]: value }));
   }
 
   function invalidateDownstream() {
@@ -230,7 +273,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          description,
+          description: combinedDescription,
           sourceMedia: media.map(({ previewUrl: _previewUrl, ...rest }) => rest),
           referenceImages,
         }),
@@ -390,17 +433,24 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           </div>
         </div>
 
-        <div className="hint-buttons">
-          {promptHints.map((hint) => (
-            <button
-              key={hint.label}
-              type="button"
-              className="secondary-button"
-              onClick={() => addPromptHint(hint.text)}
-            >
-              {hint.label}
-            </button>
-          ))}
+        <div className="enhancement-panel">
+          <div className="enhancement-panel-head">
+            <strong>Tùy chọn bổ sung</strong>
+            <span>Các lựa chọn bên dưới sẽ được ghép cùng mô tả khi tạo prompt, không chèn thêm chữ vào ô mô tả.</span>
+          </div>
+          <div className="enhancement-grid">
+            {promptEnhancements.map((group) => (
+              <label className="enhancement-field" key={group.id}>
+                <span>{group.label}</span>
+                <select value={enhancementSelections[group.id] || ''} onChange={(event) => setEnhancement(group.id, event.target.value)}>
+                  <option value="">Không chọn</option>
+                  {group.options.map(([value, label]) => (
+                    <option value={value} key={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
         </div>
 
         <textarea
@@ -413,6 +463,13 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           placeholder="Ví dụ: Tạo video photorealistic, giữ nguyên nhân vật theo ảnh tham chiếu, camera dolly chậm, ánh sáng điện ảnh; nếu có thoại hãy nêu ngôn ngữ, chất giọng, cảm xúc và tốc độ nói..."
           rows={7}
         />
+
+        {Object.values(enhancementSelections).some(Boolean) ? (
+          <details className="combined-description-preview">
+            <summary>Xem nội dung đầy đủ sẽ gửi cho AI</summary>
+            <p>{combinedDescription}</p>
+          </details>
+        ) : null}
 
         <div className="upload-zone" onClick={() => inputRef.current?.click()}>
           <input
@@ -457,7 +514,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <button
             className="primary-button"
             onClick={generatePrompts}
-            disabled={promptLoading || uploading || description.trim().length < 10}
+            disabled={promptLoading || uploading || combinedDescription.trim().length < 10}
           >
             {promptLoading ? 'GPT-5.4 đang tạo 3 prompt…' : 'Tạo 3 gợi ý prompt'}
           </button>
@@ -578,7 +635,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">4</span>
           <div>
             <h2>Tạo video bằng Grok Video 3 · 10s</h2>
-            <p>Sử dụng model grok-video-3-10s cố định 10 giây, gửi task và tự động kiểm tra trạng thái mỗi 7 giây.</p>
+            <p>Trước khi tạo video, GPT-5.4 sẽ tự động hoàn thiện và cô đọng toàn bộ nội dung đã xác nhận thành prompt đúng giới hạn của Grok Video 3 mà không cắt mù thông tin.</p>
           </div>
         </div>
 
@@ -619,7 +676,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           onClick={generateVideo}
           disabled={videoLoading || !editedDescriptionVi.trim() || !historyId || !promptConfirmed}
         >
-          {videoLoading ? 'Đang gửi tác vụ…' : 'Tạo video 10s với grok-video-3-10s'}
+          {videoLoading ? 'GPT-5.4 đang hoàn thiện prompt…' : 'Hoàn thiện prompt & tạo video 10s'}
         </button>
 
         {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (

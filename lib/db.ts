@@ -134,3 +134,15 @@ export async function deleteHistory(id: string) {
   const sql = getSql();
   await sql`DELETE FROM video_history WHERE id = ${id}`;
 }
+export async function getHistoryVideo(id: string) {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, status, video_url
+    FROM video_history
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
