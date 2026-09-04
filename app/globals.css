@@ -486,8 +486,6 @@ summary { cursor: pointer; color: #c8bfff; font-weight: 700; }
 .combined-description-preview p { margin: 10px 0 0; white-space: pre-wrap; color: #cfd5de; font-size: 12px; line-height: 1.6; }
 @media (max-width: 980px) { .enhancement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .enhancement-grid { grid-template-columns: 1fr; } }
-<<<<<<< Updated upstream
-=======
 
 .prompt-length-status {
   margin-top: 12px;
@@ -518,4 +516,3 @@ summary { cursor: pointer; color: #c8bfff; font-weight: 700; }
 .prompt-length-secondary > small { margin-left: auto; color: var(--muted); }
 .prompt-length-status.near-limit .prompt-length-secondary > strong,
 .prompt-length-status.over-limit .prompt-length-secondary > strong { color: inherit; }
->>>>>>> Stashed changes

@@ -58,7 +58,6 @@ Mở `http://localhost:3000`.
 ```env
 SHOPAIKEY_API_KEY=sk-your-shopaikey-key
 SHOPAIKEY_BASE_URL=https://api.shopaikey.com
-PROMPT_OPTIMIZER_MODEL=gpt-5.4
 DATABASE_URL=postgresql://...
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 APP_USER=admin
@@ -195,8 +194,4 @@ middleware.ts
 
 ### Long video prompt handling
 
-<<<<<<< Updated upstream
-When the user clicks video generation, the server first compiles the complete approved description with GPT-5.4, then runs a second GPT-5.4 verification/repair pass against the original source text. Only a verified prompt under the Grok Video prompt limit is submitted. The server does not blindly truncate user requirements.
-=======
 At Step 3, the app shows the exact prompt length before video generation. The approved Vietnamese prompt is sent directly to Grok Video 3 without a GPT rewrite at Step 4. Both the browser and server block submission when the prompt exceeds the 4096-character/API safety limit (including a UTF-8 byte safety check).
->>>>>>> Stashed changes

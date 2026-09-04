@@ -115,8 +115,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     return [description.trim(), ...selectedDetails].filter(Boolean).join('\n');
   }, [description, enhancementSelections]);
 
-<<<<<<< Updated upstream
-=======
   const videoPrompt = editedDescriptionVi.trim();
   const videoPromptCharCount = videoPrompt.length;
   const videoPromptByteCount = new TextEncoder().encode(videoPrompt).length;
@@ -126,7 +124,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   const videoPromptTooLong = videoPromptCharCount > MAX_VIDEO_PROMPT_CHARS || videoPromptByteCount > MAX_VIDEO_PROMPT_CHARS;
   const videoPromptNearLimit = !videoPromptTooLong && videoPromptLimitUsage >= PROMPT_WARNING_CHARS;
 
->>>>>>> Stashed changes
   function setEnhancement(groupId: string, value: string) {
     invalidateDownstream();
     setEnhancementSelections((current) => ({ ...current, [groupId]: value }));
@@ -683,11 +680,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">4</span>
           <div>
             <h2>Tạo video bằng Grok Video 3 · 10s</h2>
-<<<<<<< Updated upstream
-            <p>Trước khi tạo video, GPT-5.4 sẽ tự động hoàn thiện và cô đọng toàn bộ nội dung đã xác nhận thành prompt đúng giới hạn của Grok Video 3 mà không cắt mù thông tin.</p>
-=======
             <p>Prompt đã được kiểm tra giới hạn ở Bước 3 và sẽ được gửi trực tiếp sang Grok Video 3, không qua bước GPT-5.4 xử lý lại.</p>
->>>>>>> Stashed changes
           </div>
         </div>
 
@@ -728,11 +721,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           onClick={generateVideo}
           disabled={videoLoading || !videoPrompt || videoPromptTooLong || !historyId || !promptConfirmed}
         >
-<<<<<<< Updated upstream
-          {videoLoading ? 'GPT-5.4 đang hoàn thiện prompt…' : 'Hoàn thiện prompt & tạo video 10s'}
-=======
           {videoLoading ? 'Đang gửi yêu cầu tạo video…' : 'Tạo video 10s'}
->>>>>>> Stashed changes
         </button>
 
         {videoState && videoState.status.toUpperCase() !== 'SUCCESS' && videoState.status.toUpperCase() !== 'FAILURE' ? (
