@@ -24,7 +24,7 @@ async function ensureSchema() {
           source_media JSONB NOT NULL DEFAULT '[]'::jsonb,
           reference_images JSONB NOT NULL DEFAULT '[]'::jsonb,
           model_text TEXT NOT NULL DEFAULT 'gpt-5.4',
-          model_video TEXT NOT NULL DEFAULT 'grok-video-3-10s',
+          model_video TEXT NOT NULL DEFAULT 'grok-video-3',
           task_id TEXT,
           status TEXT NOT NULL DEFAULT 'PROMPTS_READY',
           progress TEXT,
@@ -35,7 +35,7 @@ async function ensureSchema() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
-      await sql`ALTER TABLE video_history ALTER COLUMN model_video SET DEFAULT 'grok-video-3-10s'`;
+      await sql`ALTER TABLE video_history ALTER COLUMN model_video SET DEFAULT 'grok-video-3'`;
       await sql`CREATE INDEX IF NOT EXISTS video_history_created_at_idx ON video_history (created_at DESC)`;
       await sql`CREATE INDEX IF NOT EXISTS video_history_task_id_idx ON video_history (task_id)`;
     })().catch((error) => {
@@ -87,7 +87,7 @@ export async function attachVideoTask(input: {
         status = 'queued',
         progress = '0%',
         settings = ${JSON.stringify(input.settings)}::jsonb,
-        model_video = ${input.modelVideo || 'grok-video-3-10s'},
+        model_video = ${input.modelVideo || 'grok-video-3'},
         fail_reason = NULL,
         updated_at = NOW()
     WHERE id = ${input.historyId}

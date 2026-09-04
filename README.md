@@ -7,7 +7,7 @@ Luồng tạo video:
 1. Nhập mô tả + đính kèm ảnh hoặc video tham chiếu.
 2. GPT-5.4 tạo đúng 3 gợi ý prompt video.
 3. Chọn và chỉnh sửa prompt.
-4. Gửi prompt sang `grok-video-3-10s`, polling trạng thái và hiển thị video.
+4. Gửi prompt sang `grok-video-3`, polling trạng thái và hiển thị video.
 
 Luồng tạo ảnh:
 
@@ -30,7 +30,7 @@ Có trang `/history` riêng để lưu:
 ## Kiến trúc
 
 - **Next.js App Router + TypeScript**: frontend + server API routes.
-- **Mai Đức Minh'web API (branding trên web)**: upstream server gọi ShopAIKey cho `gpt-5.4`, `grok-video-3-10s` và `gpt-image-2-all`.
+- **Mai Đức Minh'web API (branding trên web)**: upstream server gọi ShopAIKey cho `gpt-5.4`, `grok-video-3` và `gpt-image-2-all`.
 - **Vercel Blob**: lưu ảnh/frame tham chiếu dưới URL public để ShopAIKey có thể đọc.
 - **Neon Postgres**: lịch sử prompt/video. Bảng được tự tạo ở request đầu tiên.
 - **Basic Auth tùy chọn**: bảo vệ toàn bộ web/API khỏi người lạ dùng credit.
@@ -72,7 +72,7 @@ App gọi:
 
 ```text
 POST /v1/chat/completions        model: gpt-5.4
-POST /v1/video/generations       model: grok-video-3-10s
+POST /v1/video/generations       model: grok-video-3
 GET  /v1/video/generations/:id
 POST /v1/images/generations      model: gpt-image-2-all
 POST /v1/images/edits            model: gpt-image-2-all (khi có ảnh tham chiếu)
@@ -144,7 +144,7 @@ Browser
   │     └─ Neon: status=PROMPTS_READY
   │
   ├─ POST /api/video/generate
-  │     ├─ ShopAIKey /v1/video/generations (grok-video-3-10s)
+  │     ├─ ShopAIKey /v1/video/generations (grok-video-3)
   │     └─ Neon: task_id + queued
   │
   └─ GET /api/video/status/:taskId every 7s

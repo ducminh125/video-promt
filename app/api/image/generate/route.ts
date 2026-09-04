@@ -6,7 +6,7 @@ export const maxDuration = 300;
 
 const IMAGE_MODEL = 'gpt-image-2-all';
 const API_BRAND = "Mai Đức Minh'web API";
-const HUMAN_IDENTITY_CONSTRAINT = 'If any reference image contains a person, the generated image must show the exact same person. Preserve facial identity, facial structure, skin tone, hairstyle, age appearance, body proportions, distinctive features, clothing and accessories unless the approved user direction explicitly requests a change. Never replace or merge the person with a different identity.';
+const HUMAN_IDENTITY_CONSTRAINT = 'REFERENCE IDENTITY LOCK — HIGHEST PRIORITY. Treat the uploaded reference image(s) as the authoritative identity source, not merely style inspiration. If a reference contains a person, keep the exact same person: identical face identity and facial geometry, eyes, eyebrows, nose, lips, jawline, skin tone and natural skin texture, hairstyle and hairline, apparent age, body proportions, clothing and accessories unless the user explicitly requests a change. Do not beautify, redesign, reinterpret, replace, merge, swap, morph, average, de-age, age-up, or invent the face. No identity drift, face drift, face swap or different person. The first reference image is the primary identity reference. If style or composition conflicts with identity preservation, preserve identity first.';
 
 const RATIO_PREFIX: Record<string, string> = {
   '16:9': 'Landscape 16:9 composition',
@@ -106,10 +106,10 @@ export async function POST(request: Request) {
 
     const generationPrompt = [
       `${RATIO_PREFIX[ratio] || RATIO_PREFIX['16:9']}.`,
+      referenceImages.length ? `MANDATORY REFERENCE CONSISTENCY — APPLY BEFORE ALL STYLE INSTRUCTIONS:\n${HUMAN_IDENTITY_CONSTRAINT}` : '',
       'USER-APPROVED VIETNAMESE DIRECTION (authoritative):',
       descriptionVi,
-      prompt ? `\nPRODUCTION PROMPT (use for technical detail when compatible with the approved Vietnamese direction):\n${prompt}` : '',
-      referenceImages.length ? `\nMANDATORY REFERENCE CONSISTENCY:\n${HUMAN_IDENTITY_CONSTRAINT}` : '',
+      prompt ? `\nPRODUCTION PROMPT (use for technical detail only when compatible with identity lock and the approved Vietnamese direction):\n${prompt}` : '',
       '\nGenerate exactly one finished still image. Do not add watermarks or unrequested text/logos.',
     ].filter(Boolean).join('\n');
 

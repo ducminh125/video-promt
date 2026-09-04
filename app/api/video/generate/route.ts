@@ -1,13 +1,18 @@
 import { attachVideoTask } from '@/lib/db';
 import { shopAIKeyFetch } from '@/lib/shopaikey';
 import type { VideoSettings } from '@/types';
+import {
+  buildFinalVideoPrompt,
+  FIXED_VIDEO_DURATION,
+  MAX_VIDEO_PROMPT_CHARS,
+  normalizeVideoRatio,
+  normalizeVideoResolution,
+  VIDEO_MODEL,
+} from '@/lib/video-generation';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const FIXED_VIDEO_DURATION = 10;
-const VIDEO_MODEL = 'grok-video-3-10s';
-const MAX_VIDEO_PROMPT_CHARS = 4096;
 const API_BRAND = "Mai Đức Minh'web API";
 
 function utf8Length(value: string) {
@@ -55,8 +60,8 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const historyId = String(body.historyId || '');
-    // This is the exact user-approved Step 3 text. No GPT rewrite/optimization happens here.
-    const generationPrompt = String(body.descriptionVi || '').trim();
+    // The Step 3 text stays untouched. We only append deterministic technical constraints below.
+    const approvedPrompt = String(body.descriptionVi || '').trim();
     const referenceImages: string[] = (Array.isArray(body.referenceImages) ? body.referenceImages : [])
       .map((value: unknown) => String(value))
       .filter((url: string) => url.length > 0)
@@ -64,13 +69,20 @@ export async function POST(request: Request) {
 
     const settings: VideoSettings = {
       duration: FIXED_VIDEO_DURATION,
-      ratio: String(body.ratio || '16:9'),
-      resolution: body.resolution === '720P' ? '720P' : '1080P',
+      ratio: normalizeVideoRatio(body.ratio),
+      resolution: normalizeVideoResolution(body.resolution),
     };
 
-    if (!historyId || !generationPrompt) {
+    if (!historyId || !approvedPrompt) {
       return Response.json({ error: 'Thiếu historyId hoặc prompt đã xác nhận ở Bước 3.' }, { status: 400 });
     }
+
+    const generationPrompt = buildFinalVideoPrompt({
+      userPrompt: approvedPrompt,
+      ratio: settings.ratio,
+      resolution: settings.resolution,
+      hasReferenceImages: referenceImages.length > 0,
+    });
 
     const promptBytes = utf8Length(generationPrompt);
     if (generationPrompt.length > MAX_VIDEO_PROMPT_CHARS || promptBytes > MAX_VIDEO_PROMPT_CHARS) {
@@ -80,10 +92,21 @@ export async function POST(request: Request) {
           promptChars: generationPrompt.length,
           promptBytes,
           maxPromptChars: MAX_VIDEO_PROMPT_CHARS,
+          settings,
+          model: VIDEO_MODEL,
+          referenceImageCount: referenceImages.length,
         },
         { status: 400 },
       );
     }
+
+    console.info('Video generation request', {
+      model: VIDEO_MODEL,
+      promptChars: generationPrompt.length,
+      promptBytes,
+      referenceImageCount: referenceImages.length,
+      metadata: settings,
+    });
 
     const response = await shopAIKeyFetch('/v1/video/generations', {
       method: 'POST',
@@ -91,7 +114,6 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: VIDEO_MODEL,
         prompt: generationPrompt,
-        duration: FIXED_VIDEO_DURATION,
         metadata: {
           ...(referenceImages.length ? { images: referenceImages } : {}),
           duration: FIXED_VIDEO_DURATION,
@@ -140,7 +162,8 @@ export async function POST(request: Request) {
       );
     }
 
-    await attachVideoTask({ historyId, prompt: generationPrompt, taskId, settings, modelVideo: VIDEO_MODEL });
+    // Keep history human-readable: store the exact Step 3 text, not the appended technical guard.
+    await attachVideoTask({ historyId, prompt: approvedPrompt, taskId, settings, modelVideo: VIDEO_MODEL });
 
     return Response.json({
       taskId,
@@ -149,6 +172,9 @@ export async function POST(request: Request) {
       promptChars: generationPrompt.length,
       promptBytes,
       maxPromptChars: MAX_VIDEO_PROMPT_CHARS,
+      settings,
+      model: VIDEO_MODEL,
+      referenceImageCount: referenceImages.length,
     });
   } catch (error) {
     console.error('video generation error', error);

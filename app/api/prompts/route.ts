@@ -94,7 +94,7 @@ export async function POST(request: Request) {
               'Return exactly 3 suggestions.',
               'For each suggestion, description_vi must be concrete Vietnamese, around 4-6 sentences. Explain the visible scene, subject/action, camera framing and movement, lighting/color/mood, voice/dialogue when requested, and the important details that will be preserved. Write for a non-technical user so they can understand the expected video before selecting the prompt.',
               'Do not merely translate the English prompt word-for-word; summarize it naturally and specifically in Vietnamese.',
-              'Each prompt should be self-contained and optimized for a single continuous 10-second clip sent to grok-video-3-10s.',
+              'Each prompt should be self-contained and optimized for a single continuous 10-second clip sent to grok-video-3.',
               'Include subject, action, environment, camera/lens/movement, composition, lighting, material/texture fidelity, motion behavior, mood, continuity constraints, and pacing that can realistically fit within 10 seconds when relevant.',
               'When reference images are supplied, preserve identity, architecture, proportions, layout, materials, logos/text already present, and other defining details unless the user asks to change them.',
               HUMAN_IDENTITY_CONSTRAINT,

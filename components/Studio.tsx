@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { compressImage, extractVideoFrames, uploadReferenceImage } from '@/lib/media-client';
 import type { PromptSuggestion, SourceMedia } from '@/types';
+import {
+  buildFinalVideoPrompt,
+  FIXED_VIDEO_DURATION,
+  MAX_VIDEO_PROMPT_CHARS,
+  PROMPT_WARNING_CHARS,
+  VIDEO_MODEL,
+} from '@/lib/video-generation';
 
 type VideoState = {
   taskId: string;
@@ -13,9 +20,6 @@ type VideoState = {
 };
 
 const MAX_FILES = 4;
-const DEFAULT_VIDEO_DURATION = 10;
-const MAX_VIDEO_PROMPT_CHARS = 4096;
-const PROMPT_WARNING_CHARS = 3600;
 
 type WorkflowTab = 'step-1' | 'step-2' | 'step-3' | 'step-4';
 
@@ -37,8 +41,9 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   const [promptWaitSeconds, setPromptWaitSeconds] = useState(0);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoState, setVideoState] = useState<VideoState | null>(null);
+  const [videoOutputMeta, setVideoOutputMeta] = useState<{ width: number; height: number; duration: number } | null>(null);
   const [error, setError] = useState('');
-  const duration = DEFAULT_VIDEO_DURATION;
+  const duration = FIXED_VIDEO_DURATION;
   const [ratio, setRatio] = useState('16:9');
   const [resolution, setResolution] = useState<'720P' | '1080P'>('1080P');
   const [activeTab, setActiveTab] = useState<WorkflowTab>('step-1');
@@ -106,6 +111,11 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
 
   const [enhancementSelections, setEnhancementSelections] = useState<Record<string, string>>({});
 
+  const referenceImages = useMemo(
+    () => media.flatMap((item) => item.referenceUrls).slice(0, 8),
+    [media],
+  );
+
   const combinedDescription = useMemo(() => {
     const selectedDetails = promptEnhancements.flatMap((group) => {
       const selectedValue = enhancementSelections[group.id];
@@ -116,8 +126,15 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
   }, [description, enhancementSelections]);
 
   const videoPrompt = editedDescriptionVi.trim();
-  const videoPromptCharCount = videoPrompt.length;
-  const videoPromptByteCount = new TextEncoder().encode(videoPrompt).length;
+  const userPromptCharCount = videoPrompt.length;
+  const finalVideoPrompt = useMemo(() => buildFinalVideoPrompt({
+    userPrompt: videoPrompt,
+    ratio,
+    resolution,
+    hasReferenceImages: referenceImages.length > 0,
+  }), [videoPrompt, ratio, resolution, referenceImages.length]);
+  const videoPromptCharCount = finalVideoPrompt.length;
+  const videoPromptByteCount = new TextEncoder().encode(finalVideoPrompt).length;
   const videoPromptCharsRemaining = MAX_VIDEO_PROMPT_CHARS - videoPromptCharCount;
   const videoPromptBytesRemaining = MAX_VIDEO_PROMPT_CHARS - videoPromptByteCount;
   const videoPromptLimitUsage = Math.max(videoPromptCharCount, videoPromptByteCount);
@@ -138,11 +155,6 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     setVideoState(null);
     setPromptConfirmed(false);
   }
-
-  const referenceImages = useMemo(
-    () => media.flatMap((item) => item.referenceUrls).slice(0, 8),
-    [media],
-  );
 
   useEffect(() => {
     if (!seedReference?.url) return;
@@ -333,6 +345,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
     setError('');
     setVideoLoading(true);
     setVideoState(null);
+    setVideoOutputMeta(null);
     try {
       const response = await fetch('/api/video/generate', {
         method: 'POST',
@@ -604,7 +617,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">3</span>
           <div>
             <h2>Điều chỉnh prompt & kiểm tra giới hạn ký tự</h2>
-            <p>Nội dung trong ô dưới đây sẽ được gửi trực tiếp cho Grok Video 3, không qua GPT-5.4 ở Bước 4. Giới hạn tối đa là 4.096 ký tự.</p>
+            <p>Mô tả của bạn được giữ nguyên. Hệ thống chỉ bổ sung tự động khóa nhận diện ảnh tham chiếu và yêu cầu đầu ra trước khi gửi Grok Video 3. Bộ đếm dưới đây tính theo prompt thực tế sau khi bổ sung; giới hạn tối đa 4.096.</p>
           </div>
         </div>
 
@@ -642,6 +655,11 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
             </span>
           </div>
           <div className="prompt-length-secondary">
+            <span>Mô tả bạn nhập</span>
+            <strong>{userPromptCharCount.toLocaleString('vi-VN')} ký tự</strong>
+            <small>Bộ đếm chính phía trên là prompt thực tế sau khi hệ thống bổ sung khóa nhận diện và yêu cầu đầu ra.</small>
+          </div>
+          <div className="prompt-length-secondary">
             <span>Dung lượng UTF-8</span>
             <strong>{videoPromptByteCount.toLocaleString('vi-VN')} / {MAX_VIDEO_PROMPT_CHARS.toLocaleString('vi-VN')} byte</strong>
             <small>{videoPromptByteCount > MAX_VIDEO_PROMPT_CHARS ? `Vượt ${Math.abs(videoPromptBytesRemaining).toLocaleString('vi-VN')} byte` : `Còn ${videoPromptBytesRemaining.toLocaleString('vi-VN')} byte`}</small>
@@ -654,7 +672,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           ) : videoPromptNearLimit ? (
             <p>⚠️ Prompt đang gần giới hạn. Nên rút gọn một số câu để có khoảng an toàn trước khi tạo video.</p>
           ) : (
-            <p>✓ Độ dài prompt hợp lệ. Nội dung này sẽ được gửi nguyên văn sang Grok Video 3.</p>
+            <p>✓ Prompt thực tế hợp lệ. Mô tả của bạn được giữ nguyên và hệ thống sẽ bổ sung khóa nhận diện/đầu ra kỹ thuật.</p>
           )}
         </div>
 
@@ -680,7 +698,7 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <span className="step-number">4</span>
           <div>
             <h2>Tạo video bằng Grok Video 3 · 10s</h2>
-            <p>Prompt đã được kiểm tra giới hạn ở Bước 3 và sẽ được gửi trực tiếp sang Grok Video 3, không qua bước GPT-5.4 xử lý lại.</p>
+            <p>Prompt đã được kiểm tra ở Bước 3. Bước 4 không dùng GPT-5.4; hệ thống gửi mô tả đã xác nhận + khóa giữ nguyên nhận diện + đúng metadata tỷ lệ/độ phân giải tới Grok Video 3.</p>
           </div>
         </div>
 
@@ -695,11 +713,11 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           <label>
             <span>Thời lượng</span>
             <input type="number" value={10} disabled />
-            <small className="muted">Cố định 10 giây bởi model grok-video-3-10s</small>
+            <small className="muted">Cố định 10 giây; gửi bằng metadata.duration tới model {VIDEO_MODEL}</small>
           </label>
           <label>
             <span>Tỉ lệ</span>
-            <select value={ratio} onChange={(e) => setRatio(e.target.value)}>
+            <select value={ratio} onChange={(e) => { setRatio(e.target.value); setVideoState(null); setVideoOutputMeta(null); }}>
               <option value="16:9">16:9</option>
               <option value="9:16">9:16</option>
               <option value="1:1">1:1</option>
@@ -709,11 +727,17 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
           </label>
           <label>
             <span>Độ phân giải</span>
-            <select value={resolution} onChange={(e) => setResolution(e.target.value as '720P' | '1080P')}>
+            <select value={resolution} onChange={(e) => { setResolution(e.target.value as '720P' | '1080P'); setVideoState(null); setVideoOutputMeta(null); }}>
               <option value="1080P">1080P</option>
               <option value="720P">720P</option>
             </select>
           </label>
+        </div>
+
+        <div className="alert">
+          <strong>Thiết lập sẽ gửi:</strong> {duration}s · {ratio} · {resolution}.
+          {referenceImages.length ? <> Ảnh/frame đầu tiên được ưu tiên làm nguồn nhận diện chính; hệ thống tự thêm khóa chống đổi mặt/identity drift.</> : <> Chưa có ảnh tham chiếu nên không thể khóa nhận diện khuôn mặt.</>}
+          <br />Thay đổi tỷ lệ hoặc độ phân giải yêu cầu tạo một video mới; kết quả cũ không được tái định dạng tự động.
         </div>
 
         <button
@@ -750,7 +774,25 @@ export default function Studio({ seedReference, onSeedReferenceConsumed }: Studi
                   <strong>Video đã được ghi vào lịch sử</strong>
                   <span>Lịch sử chỉ hiển thị mô tả tiếng Việt bạn đã xác nhận để tạo video này.</span>
                 </div>
-                <video controls src={videoState.videoUrl} preload="metadata" />
+                <video
+                  controls
+                  src={videoState.videoUrl}
+                  preload="metadata"
+                  onLoadedMetadata={(event) => {
+                    const element = event.currentTarget;
+                    setVideoOutputMeta({
+                      width: element.videoWidth,
+                      height: element.videoHeight,
+                      duration: element.duration,
+                    });
+                  }}
+                />
+                {videoOutputMeta ? (
+                  <div className="alert">
+                    <strong>Thông số file video API trả về:</strong> {videoOutputMeta.width} × {videoOutputMeta.height}px · {Number.isFinite(videoOutputMeta.duration) ? `${videoOutputMeta.duration.toFixed(1)}s` : 'không đọc được thời lượng'}
+                    <br />Yêu cầu đã gửi: {ratio} · {resolution} · {duration}s. Kích thước hiển thị trên web luôn co giãn theo khung trang, vì vậy hãy dùng số pixel này để kiểm tra độ phân giải thực tế.
+                  </div>
+                ) : null}
                 <div className="video-result-actions">
                   <a className="secondary-button link-button" href={videoState.videoUrl} target="_blank" rel="noreferrer">
                     Mở video gốc
